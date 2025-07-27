@@ -87,7 +87,7 @@ func displayNoteDefault(note *types.Note, showMetadata, showContent bool) error 
 		fmt.Printf("📅 Created: %s\n", note.CreatedAt.Format("2006-01-02 15:04:05"))
 		fmt.Printf("📅 Updated: %s\n", note.UpdatedAt.Format("2006-01-02 15:04:05"))
 		fmt.Printf("💾 Storage: %s\n", note.StorageBackend)
-		
+
 		if showContent {
 			fmt.Println("\n" + strings.Repeat("─", 50))
 		}
@@ -110,7 +110,7 @@ func displayNoteMarkdown(note *types.Note, showMetadata, showContent bool) error
 		fmt.Printf("updated: %s\n", note.UpdatedAt.Format("2006-01-02T15:04:05Z"))
 		fmt.Printf("storage: %s\n", note.StorageBackend)
 		fmt.Println("---")
-		
+
 		if showContent {
 			fmt.Println()
 		}
@@ -140,7 +140,7 @@ func displayNoteJSON(note *types.Note) error {
     "storage": "%s"
   }
 }
-`, 
+`,
 		note.ID,
 		note.Title,
 		note.Content,
@@ -153,7 +153,7 @@ func displayNoteJSON(note *types.Note) error {
 		note.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		note.Frontmatter.Storage,
 	)
-	
+
 	return nil
 }
 
@@ -161,11 +161,11 @@ func formatTagsJSON(tags []string) string {
 	if len(tags) == 0 {
 		return ""
 	}
-	
+
 	quoted := make([]string, len(tags))
 	for i, tag := range tags {
 		quoted[i] = fmt.Sprintf(`"%s"`, tag)
 	}
-	
+
 	return strings.Join(quoted, ", ")
 }

@@ -90,13 +90,13 @@ func listAllNotes(storage *local.Storage) ([]*types.Note, error) {
 
 func filterNotesByTags(notes []*types.Note, filterTags []string) []*types.Note {
 	var filtered []*types.Note
-	
+
 	for _, note := range notes {
 		if hasAnyTag(note.Frontmatter.Tags, filterTags) {
 			filtered = append(filtered, note)
 		}
 	}
-	
+
 	return filtered
 }
 
@@ -105,20 +105,20 @@ func hasAnyTag(noteTags, filterTags []string) bool {
 	for _, tag := range noteTags {
 		tagSet[strings.ToLower(tag)] = true
 	}
-	
+
 	for _, filterTag := range filterTags {
 		if tagSet[strings.ToLower(filterTag)] {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
 func sortNotes(notes []*types.Note, sortBy string, reverse bool) {
 	sort.Slice(notes, func(i, j int) bool {
 		var less bool
-		
+
 		switch sortBy {
 		case "title":
 			less = strings.ToLower(notes[i].Title) < strings.ToLower(notes[j].Title)
@@ -130,7 +130,7 @@ func sortNotes(notes []*types.Note, sortBy string, reverse bool) {
 			// Default to updated time
 			less = notes[i].UpdatedAt.Before(notes[j].UpdatedAt)
 		}
-		
+
 		if reverse {
 			return !less
 		}
@@ -149,17 +149,17 @@ func displayNotesDefault(notes []*types.Note, showPaths bool) error {
 	for i, note := range notes {
 		fmt.Printf("%d. 📝 %s\n", i+1, note.Title)
 		fmt.Printf("   🆔 %s\n", note.ID)
-		
+
 		if len(note.Frontmatter.Tags) > 0 {
 			fmt.Printf("   🏷️  %s\n", strings.Join(note.Frontmatter.Tags, ", "))
 		}
-		
+
 		fmt.Printf("   📅 Updated: %s\n", formatRelativeTime(note.UpdatedAt))
-		
+
 		if showPaths {
 			fmt.Printf("   📁 %s\n", note.FilePath)
 		}
-		
+
 		if i < len(notes)-1 {
 			fmt.Println()
 		}
@@ -176,15 +176,15 @@ func displayNotesCompact(notes []*types.Note, showPaths bool) error {
 
 	for _, note := range notes {
 		line := fmt.Sprintf("%s | %s", note.ID[:8], note.Title)
-		
+
 		if len(note.Frontmatter.Tags) > 0 {
 			line += fmt.Sprintf(" | %s", strings.Join(note.Frontmatter.Tags, ","))
 		}
-		
+
 		if showPaths {
 			line += fmt.Sprintf(" | %s", note.FilePath)
 		}
-		
+
 		fmt.Println(line)
 	}
 
@@ -193,7 +193,7 @@ func displayNotesCompact(notes []*types.Note, showPaths bool) error {
 
 func displayNotesJSON(notes []*types.Note) error {
 	fmt.Println("[")
-	
+
 	for i, note := range notes {
 		fmt.Printf(`  {
     "id": "%s",
@@ -210,14 +210,14 @@ func displayNotesJSON(notes []*types.Note) error {
 			note.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			note.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		)
-		
+
 		if i < len(notes)-1 {
 			fmt.Println(",")
 		} else {
 			fmt.Println()
 		}
 	}
-	
+
 	fmt.Println("]")
 	return nil
 }

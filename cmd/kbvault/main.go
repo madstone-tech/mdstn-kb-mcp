@@ -31,7 +31,9 @@ and includes CLI, TUI, HTTP API, and MCP interfaces.`,
 		Version: fmt.Sprintf("%s (commit: %s, built: %s)", version, commitHash, buildTime),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Show help if no subcommand is provided
-			_ = cmd.Help()
+			if err := cmd.Help(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error showing help: %v\n", err)
+			}
 		},
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -73,7 +74,7 @@ The note will be created in the vault's notes directory.`,
 func createNewNote(config *types.Config, title, template string, tags []string) (*types.Note, error) {
 	// Generate ULID
 	id := ulid.New()
-	
+
 	// Create filename
 	filename := ulid.ToFilename(id)
 	filePath := filepath.Join("notes", filename)
@@ -115,7 +116,7 @@ func createNewNote(config *types.Config, title, template string, tags []string) 
 
 func loadTemplate(config *types.Config, templateName string) (string, error) {
 	templatePath := filepath.Join("templates", templateName+".md")
-	
+
 	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 		return "", fmt.Errorf("template %s not found at %s", templateName, templatePath)
 	}
@@ -134,13 +135,10 @@ func openInEditor(filePath string) error {
 		editor = "nano" // fallback editor
 	}
 
-	cmd := fmt.Sprintf("%s %s", editor, filePath)
-	fmt.Printf("Opening in editor: %s\n", cmd)
-	
-	// This is a simplified version - in production you'd use exec.Command
-	fmt.Printf("💡 Run: %s\n", cmd)
-	
-	return nil
+	fmt.Printf("Opening in editor: %s %s\n", editor, filePath)
+
+	cmd := exec.Command(editor, filePath)
+	return cmd.Run()
 }
 
 func loadConfig() (*types.Config, error) {
@@ -153,7 +151,7 @@ func loadConfig() (*types.Config, error) {
 	// Load configuration
 	manager := config.NewManager()
 	configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
-	
+
 	return manager.LoadFromFile(configPath)
 }
 

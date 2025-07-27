@@ -66,7 +66,7 @@ func TestCLIIntegration(t *testing.T) {
 	t.Run("vault initialization workflow", func(t *testing.T) {
 		// Create temporary directory for test vault
 		testDir := t.TempDir()
-		
+
 		// Test vault initialization
 		cmd := exec.Command(binaryPath, "init", "--path", testDir, "--name", "test-vault")
 		output, err := cmd.CombinedOutput()
@@ -98,7 +98,7 @@ func TestCLIIntegration(t *testing.T) {
 	t.Run("config commands", func(t *testing.T) {
 		// Create temporary directory for test vault
 		testDir := t.TempDir()
-		
+
 		// Initialize vault first
 		cmd := exec.Command(binaryPath, "init", "--path", testDir, "--name", "test-vault")
 		if err := cmd.Run(); err != nil {
@@ -111,7 +111,7 @@ func TestCLIIntegration(t *testing.T) {
 			t.Fatalf("Failed to get current directory: %v", err)
 		}
 		defer func() { _ = os.Chdir(oldDir) }()
-		
+
 		if err := os.Chdir(testDir); err != nil {
 			t.Fatalf("Failed to change to test directory: %v", err)
 		}
@@ -137,7 +137,7 @@ func TestCLIIntegration(t *testing.T) {
 
 		pathStr := strings.TrimSpace(string(output))
 		expectedPath := filepath.Join(testDir, ".kbvault", "config.toml")
-		
+
 		// Resolve both paths to handle symlinks (e.g., /private on macOS)
 		resolvedOutput, err := filepath.EvalSymlinks(pathStr)
 		if err != nil {
@@ -147,7 +147,7 @@ func TestCLIIntegration(t *testing.T) {
 		if err != nil {
 			resolvedExpected = expectedPath
 		}
-		
+
 		if resolvedOutput != resolvedExpected {
 			t.Errorf("Config path output doesn't match expected: got %s, expected %s", resolvedOutput, resolvedExpected)
 		}
@@ -156,7 +156,7 @@ func TestCLIIntegration(t *testing.T) {
 	t.Run("new and show commands", func(t *testing.T) {
 		// Create temporary directory for test vault
 		testDir := t.TempDir()
-		
+
 		// Initialize vault first
 		cmd := exec.Command(binaryPath, "init", "--path", testDir, "--name", "test-vault")
 		if err := cmd.Run(); err != nil {
@@ -169,7 +169,7 @@ func TestCLIIntegration(t *testing.T) {
 			t.Fatalf("Failed to get current directory: %v", err)
 		}
 		defer func() { _ = os.Chdir(oldDir) }()
-		
+
 		if err := os.Chdir(testDir); err != nil {
 			t.Fatalf("Failed to change to test directory: %v", err)
 		}

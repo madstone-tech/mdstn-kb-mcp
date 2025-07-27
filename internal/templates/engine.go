@@ -25,18 +25,18 @@ func NewEngine(templateDir string) *Engine {
 
 // TemplateData contains data available to templates
 type TemplateData struct {
-	ID          string
-	Title       string
-	Tags        []string
-	Type        string
-	Created     time.Time
-	Updated     time.Time
-	Now         time.Time
-	Date        string
-	Time        string
-	VaultName   string
-	Author      string
-	Custom      map[string]interface{}
+	ID        string
+	Title     string
+	Tags      []string
+	Type      string
+	Created   time.Time
+	Updated   time.Time
+	Now       time.Time
+	Date      string
+	Time      string
+	VaultName string
+	Author    string
+	Custom    map[string]interface{}
 }
 
 // Render renders a template with the given data
@@ -149,8 +149,8 @@ func templateFuncs() template.FuncMap {
 			}
 			return strings.Join(words, " ")
 		},
-		"join":  strings.Join,
-		"now":   time.Now,
+		"join": strings.Join,
+		"now":  time.Now,
 		"date": func(format string) string {
 			return time.Now().Format(format)
 		},

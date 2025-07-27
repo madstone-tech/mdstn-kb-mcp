@@ -91,7 +91,7 @@ Supports nested keys using dot notation (e.g., server.http.port).`,
 
 			manager := config.NewManager()
 			configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
-			
+
 			if err := manager.SaveToFile(cfg, configPath); err != nil {
 				return fmt.Errorf("failed to save configuration: %w", err)
 			}
@@ -235,7 +235,7 @@ logging:
 func showConfigKey(config *types.Config, key string) error {
 	// Handle nested keys with dot notation
 	parts := strings.Split(key, ".")
-	
+
 	switch parts[0] {
 	case "vault":
 		if len(parts) == 1 {
@@ -282,7 +282,7 @@ func showConfigKey(config *types.Config, key string) error {
 func setConfigValue(config *types.Config, key, value string) error {
 	// Handle nested keys with dot notation
 	parts := strings.Split(key, ".")
-	
+
 	switch parts[0] {
 	case "vault":
 		if len(parts) == 2 && parts[1] == "name" {

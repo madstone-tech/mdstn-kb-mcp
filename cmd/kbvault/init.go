@@ -62,7 +62,7 @@ Creates the necessary directory structure and configuration files.`,
 			fmt.Printf("✅ Initialized kbVault at: %s\n", vaultPath)
 			fmt.Printf("📁 Configuration: %s\n", configPath)
 			fmt.Printf("📝 Notes directory: %s\n", filepath.Join(vaultPath, "notes"))
-			
+
 			return nil
 		},
 	}
@@ -118,6 +118,6 @@ func createDefaultConfig(vaultPath, vaultName string) error {
 	// Save configuration
 	manager := config.NewManager()
 	configPath := filepath.Join(vaultPath, ".kbvault", "config.toml")
-	
+
 	return manager.SaveToFile(cfg, configPath)
 }
