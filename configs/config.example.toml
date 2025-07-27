@@ -1,0 +1,72 @@
+[vault]
+name = "example-vault"
+notes_dir = "notes"
+daily_dir = "notes/dailies"
+templates_dir = "templates"
+
+[storage]
+type = "local"
+path = "./vault"
+
+[storage.s3]
+# S3 configuration (when storage.type = "s3")
+bucket = ""
+region = "us-west-2"
+endpoint = ""  # For MinIO or other S3-compatible services
+access_key_id = ""  # Can be set via KBVAULT_STORAGE_ACCESS_KEY_ID
+secret_access_key = ""  # Can be set via KBVAULT_STORAGE_SECRET_ACCESS_KEY
+
+[storage.cache]
+enabled = true
+local_path = "/tmp/kbvault-cache"
+max_size_mb = 100
+ttl_minutes = 60
+
+[server]
+http_enabled = true
+http_port = 8080
+grpc_enabled = false
+grpc_port = 9090
+host = "localhost"
+enable_cors = true
+enable_auth = false
+
+[server.auth]
+type = "none"  # none, jwt, apikey
+jwt_secret = ""
+api_keys = []
+
+[server.grpc]
+# Enable specific gRPC services (only when grpc_enabled = true)
+enable_bulk_operations = false
+enable_collaboration = false
+enable_agent_service = false
+enable_vault_service = true
+
+[logging]
+level = "WARN"  # DEBUG, INFO, WARN, ERROR
+output = "stdout"  # stdout, file, remote
+file_path = ""
+remote_endpoint = ""
+
+[tui]
+theme = "default"  # default, dark, light
+vim_mode = false
+show_help = true
+
+[mcp]
+enabled = true
+socket_path = "/tmp/kbvault.sock"
+
+[cache]
+# Auto-enable caching based on storage type and vault size
+mode = "auto"  # auto, enabled, disabled
+
+[cache.memory]
+max_size_mb = 50
+ttl_minutes = 10
+
+[cache.disk]
+max_size_mb = 500
+ttl_hours = 12
+cleanup_interval_hours = 6

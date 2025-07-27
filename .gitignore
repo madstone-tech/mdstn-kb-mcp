@@ -1,0 +1,61 @@
+# Binaries
+/bin/
+/dist/
+kbvault
+kbvault.exe
+
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Test cache
+.cache/
+
+# Dependencies
+/vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Configuration (keep templates)
+config.toml
+*.local.toml
+
+# Cache directories
+/cache/
+/tmp/
+
+# Build artifacts
+/build/
+/releases/
+
+# Test outputs
+coverage.out
+profile.out
+
+# Documentation builds
+/docs/site/
