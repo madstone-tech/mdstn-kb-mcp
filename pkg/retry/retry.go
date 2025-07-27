@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"time"
 
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
@@ -54,7 +55,9 @@ func (b *ExponentialBackoff) Duration(attempt int) time.Duration {
 	// Add jitter to prevent thundering herd
 	if b.Jitter > 0 {
 		jitterAmount := delay * b.Jitter
-		delay += (jitterAmount * 2 * (0.5 - 0.5)) // Random jitter between -jitter and +jitter
+		// Random jitter between -jitter and +jitter
+		randomFactor := rand.Float64()*2 - 1 // Random value between -1 and 1
+		delay += jitterAmount * randomFactor
 	}
 
 	return time.Duration(delay)

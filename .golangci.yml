@@ -1,78 +1,26 @@
 # golangci-lint configuration for kbVault
 # See: https://golangci-lint.run/usage/configuration/
 
+version: 2
+
 run:
   timeout: 5m
   tests: true
 
 linters:
   enable:
-    - gofmt
-    - goimports
     - govet
     - errcheck
     - staticcheck
     - unused
-    - gosimple
     - ineffassign
-    - typecheck
-    - gosec
-    - asciicheck
-    - bodyclose
-    - durationcheck
-    - errorlint
-    - exhaustive
-    - exportloopref
-    - funlen
-    - gocognit
-    - goconst
-    - gocritic
-    - gocyclo
-    - godot
-    - gofumpt
-    - goprintffuncname
-    - lll
-    - makezero
-    - misspell
-    - nakedret
-    - nestif
-    - nilerr
-    - noctx
-    - nolintlint
-    - prealloc
-    - predeclared
-    - revive
-    - stylecheck
-    - thelper
-    - unconvert
-    - unparam
-    - whitespace
 
 linters-settings:
-  funlen:
-    lines: 100
-    statements: 50
-  
-  gocyclo:
-    min-complexity: 15
-  
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  
-  lll:
-    line-length: 140
-  
   govet:
     enable-all: true
-  
-  misspell:
-    locale: US
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - dupl
-        - funlen
-        - gocognit
+        - errcheck

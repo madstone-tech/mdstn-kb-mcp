@@ -136,7 +136,7 @@ func (s *Storage) Write(ctx context.Context, path string, data []byte) error {
 
 	// Atomic rename
 	if err := os.Rename(tempPath, fullPath); err != nil {
-		os.Remove(tempPath) // Clean up temp file
+		_ = os.Remove(tempPath) // Clean up temp file (ignore error as we're already handling one)
 		return types.NewStorageError(s.Type(), "write", path, err, true)
 	}
 
@@ -324,16 +324,16 @@ func (s *Storage) WriteStream(ctx context.Context, path string, reader io.Reader
 
 	// Copy data from reader to temp file
 	_, err = io.Copy(tempFile, reader)
-	tempFile.Close()
+	_ = tempFile.Close() // Close temp file (ignore close error)
 	
 	if err != nil {
-		os.Remove(tempPath)
+		_ = os.Remove(tempPath) // Clean up on error (ignore removal error)
 		return types.NewStorageError(s.Type(), "write_stream", path, err, true)
 	}
 
 	// Atomic rename
 	if err := os.Rename(tempPath, fullPath); err != nil {
-		os.Remove(tempPath)
+		_ = os.Remove(tempPath) // Clean up on error (ignore removal error)
 		return types.NewStorageError(s.Type(), "write_stream", path, err, true)
 	}
 
@@ -421,8 +421,8 @@ func (s *Storage) Health(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("storage not writable: %w", err)
 	}
-	file.Close()
-	os.Remove(tempPath)
+	_ = file.Close()   // Ignore close error for temp file
+	_ = os.Remove(tempPath) // Ignore removal error for temp file
 
 	return nil
 }
@@ -463,9 +463,7 @@ func (s *Storage) getFullPath(path string) string {
 	cleanPath := filepath.Clean(path)
 	
 	// Remove leading slash if present
-	if strings.HasPrefix(cleanPath, "/") {
-		cleanPath = cleanPath[1:]
-	}
+	cleanPath = strings.TrimPrefix(cleanPath, "/")
 	
 	// Ensure the path is relative and doesn't escape
 	if strings.Contains(cleanPath, "..") {
@@ -552,20 +550,20 @@ func (s *Storage) lockFile(ctx context.Context, path string, lockType int) (func
 		select {
 		case err := <-flockDone:
 			if err != nil {
-				file.Close()
+				_ = file.Close() // Ignore close error when handling lock error
 				mutex.Unlock()
 				return nil, fmt.Errorf("failed to acquire file lock: %w", err)
 			}
 			
 			// Return unlock function
 			return func() {
-				unix.Flock(int(file.Fd()), unix.LOCK_UN)
-				file.Close()
+				_ = unix.Flock(int(file.Fd()), unix.LOCK_UN) // Ignore unlock error
+				_ = file.Close() // Ignore close error in cleanup
 				mutex.Unlock()
 			}, nil
 			
 		case <-time.After(timeout):
-			file.Close()
+			_ = file.Close() // Ignore close error on timeout
 			mutex.Unlock()
 			return nil, fmt.Errorf("timeout acquiring file lock after %v", timeout)
 		}

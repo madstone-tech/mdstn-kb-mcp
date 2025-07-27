@@ -92,20 +92,20 @@ func (m *Manager) WriteToFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temp config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }() // Ignore close error in defer
 
 	// Encode configuration as TOML
 	encoder := toml.NewEncoder(file)
 	if err := encoder.Encode(m.config); err != nil {
-		os.Remove(tempPath)
+		_ = os.Remove(tempPath) // Ignore removal error when handling encode error
 		return fmt.Errorf("failed to encode configuration: %w", err)
 	}
 
-	file.Close()
+	_ = file.Close() // Ignore close error before rename
 
 	// Atomic rename
 	if err := os.Rename(tempPath, path); err != nil {
-		os.Remove(tempPath)
+		_ = os.Remove(tempPath) // Ignore removal error when handling rename error
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 

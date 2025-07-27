@@ -266,9 +266,9 @@ func TestCircuitBreaker_Recovery(t *testing.T) {
 	// Cause failures to open circuit
 	testErr := errors.New("test error")
 	for i := 0; i < 2; i++ {
-		cb.Execute(func() error {
+		_ = cb.Execute(func() error {
 			return testErr
-		})
+		}) // Ignore error return in test - we're testing circuit state
 	}
 
 	if cb.State() != CircuitOpen {
@@ -470,9 +470,9 @@ func BenchmarkRetry_Success(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Retry(ctx, config, func() error {
+		_ = Retry(ctx, config, func() error {
 			return nil
-		})
+		}) // Ignore error in benchmark
 	}
 }
 
@@ -485,13 +485,13 @@ func BenchmarkRetry_WithRetries(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		attempt := 0
-		Retry(ctx, config, func() error {
+		_ = Retry(ctx, config, func() error {
 			attempt++
 			if attempt < 2 {
 				return types.NewStorageError(types.StorageTypeLocal, "test", "path", errors.New("temp"), true)
 			}
 			return nil
-		})
+		}) // Ignore error in benchmark
 	}
 }
 
@@ -500,8 +500,8 @@ func BenchmarkCircuitBreaker_Closed(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cb.Execute(func() error {
+		_ = cb.Execute(func() error {
 			return nil
-		})
+		}) // Ignore error in benchmark
 	}
 }
