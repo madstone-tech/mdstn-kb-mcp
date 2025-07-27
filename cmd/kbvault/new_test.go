@@ -233,8 +233,17 @@ func TestFindVaultRoot(t *testing.T) {
 				return
 			}
 
-			if !tt.wantErr && got != tt.want {
-				t.Errorf("findVaultRoot() = %v, want %v", got, tt.want)
+			if !tt.wantErr {
+				// Resolve both paths to handle symlinks on macOS
+				gotResolved, err1 := filepath.EvalSymlinks(got)
+				wantResolved, err2 := filepath.EvalSymlinks(tt.want)
+				if err1 == nil && err2 == nil {
+					if gotResolved != wantResolved {
+						t.Errorf("findVaultRoot() = %v (resolved: %v), want %v (resolved: %v)", got, gotResolved, tt.want, wantResolved)
+					}
+				} else if got != tt.want {
+					t.Errorf("findVaultRoot() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}

@@ -82,52 +82,170 @@ The MDSTN Knowledge Base MCP (Model Context Protocol) server provides structured
 
 ## Upcoming Sessions
 
-### Session 4: Advanced Features & Integration (PLANNED)
+### Session 4: Advanced Search & Content Management ✅ COMPLETED
+**Status:** Completed
+**Branch:** session-4-search-content-management
+**Key Achievements:**
+- Implemented comprehensive full-text search engine with advanced features
+- Created link management system for note relationships and validation
+- Enhanced CLI with search, edit, and delete commands
+- Built in-memory inverted index for fast search operations
+- Added support for multiple search strategies (relevance, date, title sorting)
+- Implemented wiki-style and markdown link parsing
+- Created graph-based link analysis with backlinks and orphan detection
+- Added interactive note selection and editing capabilities
+
+**Files Created/Modified:**
+- `internal/search/` - Complete search engine with indexing and ranking
+- `internal/links/` - Link parsing, validation, and graph analysis
+- `cmd/kbvault/search.go` - Advanced search CLI command
+- `cmd/kbvault/edit.go` - Interactive note editing command
+- `cmd/kbvault/delete.go` - Safe note deletion with confirmation
+- Comprehensive test suites for all new functionality
+
+**Technical Features Implemented:**
+1. **Advanced Search Engine**
+   - Full-text search with TF-IDF-style scoring
+   - Metadata filtering by tags, type, date ranges
+   - Field-specific searching (title, content, tags)
+   - Relevance ranking with position-based scoring
+   - Fuzzy matching capabilities
+   - Pagination and result limiting
+
+2. **Link Management System**
+   - Wiki-style link parsing `[[Note Title]]`
+   - Markdown link parsing `[text](target)`
+   - Bidirectional link tracking
+   - Broken link detection and validation
+   - Link graph analysis with orphan detection
+   - Backlink discovery and ranking
+
+3. **Enhanced CLI Commands**
+   - `search` - Comprehensive search with filters and output formats
+   - `edit` - Interactive note editing with editor integration
+   - `delete` - Safe deletion with confirmation and dry-run modes
+   - JSON output support for programmatic use
+   - Interactive selection for multiple matches
+
+**Performance & Quality:**
+- **Test Coverage:** Increased to 60%+ with comprehensive test suites
+- **Search Performance:** In-memory indexing for sub-millisecond searches
+- **Memory Efficient:** Lazy loading and streaming for large vaults
+- **Concurrent Safe:** Thread-safe operations with proper locking
+
+**Notable Technical Decisions:**
+- Used in-memory inverted index for maximum search speed
+- Implemented simple tokenization suitable for note content
+- Created modular architecture for easy extension
+- Added comprehensive error handling and user feedback
+- Designed for easy integration with future features
+
+### Session 5: Viper Configuration & Multi-Profile Support (PLANNED)
 **Status:** Planned
+**Branch:** session-5-viper-profiles
 **Priority:** High
 **Estimated Scope:** 2-3 development sessions
 
 **Core Features to Implement:**
-1. **Advanced Search & Filtering**
-   - Full-text search with ranking
-   - Complex query syntax support
-   - Search result highlighting
-   - Fuzzy matching capabilities
+1. **Viper-Based Configuration System**
+   - Replace current config with Viper for hierarchical configuration
+   - AWS CLI-style configuration precedence
+   - Environment variable integration
+   - Configuration validation and migration tools
 
-2. **Note Relationships & Linking**
-   - Bidirectional note linking
-   - Backlink discovery and display
-   - Link validation and maintenance
-   - Graph visualization preparation
+2. **Multi-Profile Support**
+   - Multiple vault/workspace management (`work`, `personal`, `research`)
+   - Profile-specific configurations and storage backends
+   - Global and profile-specific settings
+   - Profile inheritance and templating
 
-3. **Import/Export Capabilities**
-   - Multiple format support (Markdown, JSON, YAML)
-   - Bulk import from existing systems
-   - Export with metadata preservation
-   - Migration tools
+3. **Cross-Interface Profile Integration**
+   - CLI: `--profile` flag and `configure` commands
+   - MCP: Profile-aware tools and profile switching
+   - HTTP API: Multi-profile endpoints and session management
+   - Consistent profile behavior across all interfaces
 
-4. **Performance Optimization**
-   - Indexing system for fast searches
-   - Caching layer implementation
-   - Large vault handling
-   - Memory optimization
+4. **Enhanced Configuration Management**
+   - Interactive configuration setup (`kbvault configure`)
+   - Profile creation, deletion, and listing
+   - Configuration validation and error reporting
+   - Backup and migration utilities
 
-**Technical Debt & Improvements:**
-- Enhanced error messages and user feedback
-- Improved template system with validation
-- Advanced configuration options
-- Performance benchmarking and optimization
+**Technical Architecture:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Viper Config Layer                       │
+│  - Profile resolution (work, personal, research)            │
+│  - Hierarchical config loading                              │
+│  - Environment variable resolution                          │
+└─────────────────────────────────────────────────────────────┘
+                                 │
+         ┌───────────────────────┼───────────────────────┐
+         │                       │                       │
+    ┌────▼────┐            ┌────▼────┐            ┌────▼────┐
+    │   CLI   │            │   MCP   │            │ HTTP API│
+    │         │            │ Server  │            │ Server  │
+    └─────────┘            └─────────┘            └─────────┘
+```
+
+**Configuration Structure:**
+```
+~/.kbvault/                    # Global config directory
+├── config.toml               # Global config + default profile
+├── profiles/                 # Profile-specific configs
+│   ├── work.toml
+│   ├── personal.toml
+│   └── research.toml
+└── credentials               # Optional: separate credentials
+
+# Plus local vault configs (current behavior)
+~/my-vault/.kbvault/config.toml  # Local overrides
+```
+
+**CLI Interface Examples:**
+```bash
+# Profile management
+kbvault configure                          # Interactive setup
+kbvault configure --profile work           # Setup work profile
+kbvault configure list-profiles
+kbvault configure delete-profile work
+
+# Profile usage
+kbvault --profile work search "meeting"
+kbvault --profile personal list
+export KBVAULT_PROFILE=work; kbvault search "project"
+```
+
+**Files to Create/Modify:**
+- `pkg/config/viper.go` - New Viper-based config system
+- `pkg/config/profiles.go` - Profile management logic
+- `pkg/config/migration.go` - Migrate existing configs
+- `cmd/kbvault/configure.go` - AWS-style configure command
+- `cmd/kbvault/profiles.go` - Profile management commands
+- `cmd/kbvault/root.go` - Global `--profile` flag
+- `internal/api/profiles.go` - HTTP profile endpoints
+- `internal/mcp/profiles.go` - MCP profile tools
+- Enhanced server capabilities for multi-profile support
 
 **Testing & Quality:**
 - Maintain >60% test coverage
-- Integration test suite
-- Performance testing
-- User acceptance testing
+- Configuration migration testing
+- Cross-interface consistency testing
+- Profile isolation verification
 
-### Session 5: Production Readiness (PLANNED)
-**Status:** Planned
+**Benefits:**
+- Multiple vaults/workspaces support (work, personal, research)
+- Professional-grade configuration management
+- Better credential and settings isolation
+- Familiar AWS CLI-style interface
+- Consistent behavior across CLI, MCP, and HTTP API
+
+### Session 6: Production Readiness & Advanced Features (PLANNED)
+**Status:** Planned  
 **Features:**
-- Docker containerization
+- Multi-profile server mode with authentication
+- Advanced profile features (inheritance, templates)
+- Docker containerization with profile support
 - Documentation completion
 - Security hardening
 - Deployment automation
