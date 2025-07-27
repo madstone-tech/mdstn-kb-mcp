@@ -108,6 +108,9 @@ ci-test: ## CI test target
 ci-build: ## CI build target
 	go build $(BUILD_FLAGS) -o $(BIN_DIR)/kbvault ./$(CMD_DIR)/kbvault
 
+pre-commit: ## Run all pre-commit checks locally (mimics CI)
+	@./scripts/pre-commit.sh
+
 # Generate targets (for future use)
 generate: ## Run go generate
 	go generate ./...
