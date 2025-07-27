@@ -12,7 +12,7 @@ COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # Go build flags
-LDFLAGS = -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildTime=$(BUILD_TIME)
+LDFLAGS = -X main.version=$(VERSION) -X main.commitHash=$(COMMIT) -X main.buildTime=$(BUILD_TIME)
 BUILD_FLAGS = -ldflags "$(LDFLAGS)"
 
 # Directories
