@@ -14,7 +14,7 @@ func TestCLIIntegration(t *testing.T) {
 	if err := buildCmd.Run(); err != nil {
 		t.Fatalf("Failed to build kbvault: %v", err)
 	}
-	defer os.Remove("test-kbvault")
+	defer func() { _ = os.Remove("test-kbvault") }()
 
 	binaryPath, err := filepath.Abs("test-kbvault")
 	if err != nil {
@@ -110,7 +110,7 @@ func TestCLIIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get current directory: %v", err)
 		}
-		defer os.Chdir(oldDir)
+		defer func() { _ = os.Chdir(oldDir) }()
 		
 		if err := os.Chdir(testDir); err != nil {
 			t.Fatalf("Failed to change to test directory: %v", err)
@@ -168,7 +168,7 @@ func TestCLIIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get current directory: %v", err)
 		}
-		defer os.Chdir(oldDir)
+		defer func() { _ = os.Chdir(oldDir) }()
 		
 		if err := os.Chdir(testDir); err != nil {
 			t.Fatalf("Failed to change to test directory: %v", err)

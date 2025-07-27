@@ -136,7 +136,19 @@ func templateFuncs() template.FuncMap {
 	return template.FuncMap{
 		"lower": strings.ToLower,
 		"upper": strings.ToUpper,
-		"title": strings.Title,
+		"title": func(s string) string {
+			if len(s) == 0 {
+				return s
+			}
+			// Simple title case - capitalize first letter of each word
+			words := strings.Fields(s)
+			for i, word := range words {
+				if len(word) > 0 {
+					words[i] = strings.ToUpper(word[:1]) + strings.ToLower(word[1:])
+				}
+			}
+			return strings.Join(words, " ")
+		},
 		"join":  strings.Join,
 		"now":   time.Now,
 		"date": func(format string) string {
