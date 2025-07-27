@@ -43,6 +43,9 @@ and includes CLI, TUI, HTTP API, and MCP interfaces.`,
 	cmd.AddCommand(newShowCmd())
 	cmd.AddCommand(newListCmd())
 	cmd.AddCommand(newConfigCmd())
+	cmd.AddCommand(newSearchCmd())
+	cmd.AddCommand(newEditCmd())
+	cmd.AddCommand(newDeleteCmd())
 
 	return cmd
 }
