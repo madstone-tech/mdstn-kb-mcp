@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -64,8 +64,16 @@ Examples:
 				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			// Initialize storage
-			storage, err := local.New(cfg.Storage.Local)
+			// Find vault root for proper storage initialization
+			vaultRoot, err := findVaultRoot()
+			if err != nil {
+				return fmt.Errorf("not in a kbvault directory: %w", err)
+			}
+
+			// Initialize storage with vault root as base path
+			storageConfig := cfg.Storage.Local
+			storageConfig.Path = vaultRoot // Use vault root instead of relative path
+			storage, err := local.New(storageConfig)
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
@@ -80,11 +88,11 @@ Examples:
 
 			// Handle index building
 			if buildIndex {
-				fmt.Println("Building search index...")
+				fmt.Fprintln(cmd.OutOrStdout(), "Building search index...")
 				if err := engine.BuildIndex(ctx); err != nil {
 					return fmt.Errorf("failed to build index: %w", err)
 				}
-				fmt.Println("Search index built successfully")
+				fmt.Fprintln(cmd.OutOrStdout(), "Search index built successfully")
 				return nil
 			}
 
@@ -136,14 +144,14 @@ Examples:
 
 			// Output results
 			if outputJSON {
-				return outputSearchJSON(results)
+				return outputSearchJSON(cmd.OutOrStdout(), results)
 			}
 
 			if detailed {
-				return outputSearchDetailed(results)
+				return outputSearchDetailed(cmd.OutOrStdout(), results)
 			}
 
-			return outputSearchList(results)
+			return outputSearchList(cmd.OutOrStdout(), results)
 		},
 	}
 
@@ -164,71 +172,71 @@ Examples:
 	return cmd
 }
 
-func outputSearchList(results []search.SearchResult) error {
+func outputSearchList(w io.Writer, results []search.SearchResult) error {
 	if len(results) == 0 {
-		fmt.Println("No results found")
+		fmt.Fprintln(w, "No results found")
 		return nil
 	}
 
-	fmt.Printf("Found %d results:\n\n", len(results))
+	fmt.Fprintf(w, "Found %d results:\n\n", len(results))
 
 	for i, result := range results {
-		fmt.Printf("%d. %s\n", i+1, result.Note.Title)
-		fmt.Printf("   ID: %s\n", result.Note.ID)
+		fmt.Fprintf(w, "%d. %s\n", i+1, result.Note.Title)
+		fmt.Fprintf(w, "   ID: %s\n", result.Note.ID)
 		
 		if len(result.Note.Tags) > 0 {
-			fmt.Printf("   Tags: %s\n", strings.Join(result.Note.Tags, ", "))
+			fmt.Fprintf(w, "   Tags: %s\n", strings.Join(result.Note.Tags, ", "))
 		}
 		
-		fmt.Printf("   Score: %.2f\n", result.Score)
-		fmt.Printf("   Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04"))
-		fmt.Println()
+		fmt.Fprintf(w, "   Score: %.2f\n", result.Score)
+		fmt.Fprintf(w, "   Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04"))
+		fmt.Fprintln(w)
 	}
 
 	return nil
 }
 
-func outputSearchDetailed(results []search.SearchResult) error {
+func outputSearchDetailed(w io.Writer, results []search.SearchResult) error {
 	if len(results) == 0 {
-		fmt.Println("No results found")
+		fmt.Fprintln(w, "No results found")
 		return nil
 	}
 
-	fmt.Printf("Found %d results:\n\n", len(results))
+	fmt.Fprintf(w, "Found %d results:\n\n", len(results))
 
 	for i, result := range results {
-		fmt.Printf("=== Result %d ===\n", i+1)
-		fmt.Printf("Title: %s\n", result.Note.Title)
-		fmt.Printf("ID: %s\n", result.Note.ID)
-		fmt.Printf("Path: %s\n", result.Note.FilePath)
-		fmt.Printf("Type: %s\n", result.Note.Type)
+		fmt.Fprintf(w, "=== Result %d ===\n", i+1)
+		fmt.Fprintf(w, "Title: %s\n", result.Note.Title)
+		fmt.Fprintf(w, "ID: %s\n", result.Note.ID)
+		fmt.Fprintf(w, "Path: %s\n", result.Note.FilePath)
+		fmt.Fprintf(w, "Type: %s\n", result.Note.Type)
 		
 		if len(result.Note.Tags) > 0 {
-			fmt.Printf("Tags: %s\n", strings.Join(result.Note.Tags, ", "))
+			fmt.Fprintf(w, "Tags: %s\n", strings.Join(result.Note.Tags, ", "))
 		}
 		
-		fmt.Printf("Score: %.2f\n", result.Score)
-		fmt.Printf("Created: %s\n", result.Note.CreatedAt.Format("2006-01-02 15:04:05"))
-		fmt.Printf("Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04:05"))
+		fmt.Fprintf(w, "Score: %.2f\n", result.Score)
+		fmt.Fprintf(w, "Created: %s\n", result.Note.CreatedAt.Format("2006-01-02 15:04:05"))
+		fmt.Fprintf(w, "Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04:05"))
 		
 		if result.Snippet != "" {
-			fmt.Printf("\nSnippet:\n%s\n", result.Snippet)
+			fmt.Fprintf(w, "\nSnippet:\n%s\n", result.Snippet)
 		}
 		
 		if len(result.Matches) > 0 {
-			fmt.Printf("\nMatches:\n")
+			fmt.Fprintf(w, "\nMatches:\n")
 			for _, match := range result.Matches {
-				fmt.Printf("  - %s: %s\n", match.Field, match.Context)
+				fmt.Fprintf(w, "  - %s: %s\n", match.Field, match.Context)
 			}
 		}
 		
-		fmt.Println()
+		fmt.Fprintln(w)
 	}
 
 	return nil
 }
 
-func outputSearchJSON(results []search.SearchResult) error {
+func outputSearchJSON(w io.Writer, results []search.SearchResult) error {
 	output := struct {
 		Count   int                   `json:"count"`
 		Results []search.SearchResult `json:"results"`
@@ -237,7 +245,7 @@ func outputSearchJSON(results []search.SearchResult) error {
 		Results: results,
 	}
 
-	encoder := json.NewEncoder(os.Stdout)
+	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
 }

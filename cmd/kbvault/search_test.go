@@ -68,21 +68,25 @@ Action items: review code, update documentation.`,
 		},
 	}
 	
+	// Create notes directory as expected by vault structure
+	notesDir := filepath.Join(vaultPath, "notes")
+	err = os.MkdirAll(notesDir, 0755)
+	require.NoError(t, err)
+	
 	// Write test notes
 	for _, note := range testNotes {
-		notePath := filepath.Join(vaultPath, note.filename)
+		notePath := filepath.Join(notesDir, note.filename)
 		err := os.WriteFile(notePath, []byte(note.content), 0644)
 		require.NoError(t, err)
 	}
 	
-	// Set vault path in environment
-	oldEnv := os.Getenv("MDSTN_VAULT_PATH")
-	if err := os.Setenv("MDSTN_VAULT_PATH", vaultPath); err != nil {
-		t.Fatalf("Failed to set env: %v", err)
-	}
-	defer func() {
-		_ = os.Setenv("MDSTN_VAULT_PATH", oldEnv)
-	}()
+	// Change to vault directory for tests to work
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	
+	err = os.Chdir(vaultPath)
+	require.NoError(t, err)
 	
 	tests := []struct {
 		name        string
@@ -230,14 +234,13 @@ func TestSearchCommand_DateRange(t *testing.T) {
 	err := initCmd.Execute()
 	require.NoError(t, err)
 	
-	// Set vault path
-	oldEnv := os.Getenv("MDSTN_VAULT_PATH")
-	if err := os.Setenv("MDSTN_VAULT_PATH", vaultPath); err != nil {
-		t.Fatalf("Failed to set env: %v", err)
-	}
-	defer func() {
-		_ = os.Setenv("MDSTN_VAULT_PATH", oldEnv)
-	}()
+	// Change to vault directory for tests to work
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	
+	err = os.Chdir(vaultPath)
+	require.NoError(t, err)
 	
 	tests := []struct {
 		name    string
@@ -293,6 +296,11 @@ func TestSearchCommand_Sorting(t *testing.T) {
 	err := initCmd.Execute()
 	require.NoError(t, err)
 	
+	// Create notes directory
+	notesDir := filepath.Join(vaultPath, "notes")
+	err = os.MkdirAll(notesDir, 0755)
+	require.NoError(t, err)
+	
 	// Create notes with different titles
 	notes := []struct {
 		filename string
@@ -304,19 +312,18 @@ func TestSearchCommand_Sorting(t *testing.T) {
 	}
 	
 	for _, note := range notes {
-		notePath := filepath.Join(vaultPath, note.filename)
+		notePath := filepath.Join(notesDir, note.filename)
 		err := os.WriteFile(notePath, []byte(note.title), 0644)
 		require.NoError(t, err)
 	}
 	
-	// Set vault path
-	oldEnv := os.Getenv("MDSTN_VAULT_PATH")
-	if err := os.Setenv("MDSTN_VAULT_PATH", vaultPath); err != nil {
-		t.Fatalf("Failed to set env: %v", err)
-	}
-	defer func() {
-		_ = os.Setenv("MDSTN_VAULT_PATH", oldEnv)
-	}()
+	// Change to vault directory for tests to work
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	
+	err = os.Chdir(vaultPath)
+	require.NoError(t, err)
 	
 	// Test sorting by title
 	cmd := newRootCmd()
@@ -350,23 +357,27 @@ func TestSearchCommand_Pagination(t *testing.T) {
 	err := initCmd.Execute()
 	require.NoError(t, err)
 	
+	// Create notes directory
+	notesDir := filepath.Join(vaultPath, "notes")
+	err = os.MkdirAll(notesDir, 0755)
+	require.NoError(t, err)
+	
 	// Create multiple notes
 	for i := 0; i < 10; i++ {
 		filename := fmt.Sprintf("note-%02d.md", i)
 		content := fmt.Sprintf("# Note %d\nThis is test note number %d with search keyword", i, i)
-		notePath := filepath.Join(vaultPath, filename)
+		notePath := filepath.Join(notesDir, filename)
 		err := os.WriteFile(notePath, []byte(content), 0644)
 		require.NoError(t, err)
 	}
 	
-	// Set vault path
-	oldEnv := os.Getenv("MDSTN_VAULT_PATH")
-	if err := os.Setenv("MDSTN_VAULT_PATH", vaultPath); err != nil {
-		t.Fatalf("Failed to set env: %v", err)
-	}
-	defer func() {
-		_ = os.Setenv("MDSTN_VAULT_PATH", oldEnv)
-	}()
+	// Change to vault directory for tests to work
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	
+	err = os.Chdir(vaultPath)
+	require.NoError(t, err)
 	
 	// Test with limit
 	cmd := newRootCmd()

@@ -207,11 +207,25 @@ func (e *Engine) BuildIndex(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	
-	// List all notes
-	files, err := e.storage.List(ctx, "")
-	if err != nil {
-		return fmt.Errorf("failed to list files: %w", err)
+	// List all notes from common directories
+	dirs := []string{"", "notes", "daily"} // Root, notes directory, and daily notes
+	var allFiles []string
+	
+	for _, dir := range dirs {
+		files, err := e.storage.List(ctx, dir)
+		if err != nil {
+			// Continue if directory doesn't exist
+			continue
+		}
+		for _, file := range files {
+			if dir != "" {
+				file = dir + "/" + file
+			}
+			allFiles = append(allFiles, file)
+		}
 	}
+	
+	files := allFiles
 	
 	// Clear existing index
 	e.index = NewIndex()
