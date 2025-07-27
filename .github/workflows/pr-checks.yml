@@ -188,13 +188,20 @@ jobs:
           VERSION=test
           COMMIT=${{ github.sha }}
           BUILD_TIME=${{ github.run_id }}
+        outputs: type=docker
 
     - name: Test Docker image
       run: |
         echo "Testing Docker image..."
+        # List available images to debug
+        docker images | grep kbvault || echo "No kbvault images found"
         # Test that the image exists and can be inspected
-        docker image inspect kbvault:test > /dev/null
-        echo "✅ Docker image built successfully"
+        if docker image inspect kbvault:test > /dev/null 2>&1; then
+          echo "✅ Docker image built successfully"
+        else
+          echo "❌ Docker image not found - build may have failed"
+          exit 1
+        fi
 
   pr-checks-complete:
     name: All PR checks passed
