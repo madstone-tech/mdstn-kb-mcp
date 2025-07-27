@@ -1,9 +1,9 @@
-name: PR Checks
+name: CI
 
 on:
-  pull_request:
-    branches: [ main, develop ]
   push:
+    branches: [ main, develop ]
+  pull_request:
     branches: [ main, develop ]
 
 # Cancel in-progress workflows on the same branch
@@ -69,9 +69,9 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-1.24-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-test-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-1.24-
+          ${{ runner.os }}-go-test-
 
     - name: Download dependencies
       run: go mod download
@@ -86,11 +86,12 @@ jobs:
       run: |
         COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
         echo "Test coverage: ${COVERAGE}%"
-        # Require at least 50% coverage for Session 2 (will increase to 80% in future sessions)
+        # Require at least 50% coverage
         if awk "BEGIN {exit !($COVERAGE < 50)}"; then
-          echo "Test coverage is below 50% (${COVERAGE}%)"
+          echo "❌ Test coverage is below 50% (${COVERAGE}%)"
           exit 1
         fi
+        echo "✅ Test coverage meets requirement: ${COVERAGE}%"
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -134,7 +135,9 @@ jobs:
         chmod +x bin/kbvault
         ./bin/kbvault --version
 
+    # Only upload artifacts for pull requests
     - name: Upload build artifacts
+      if: github.event_name == 'pull_request'
       uses: actions/upload-artifact@v4
       with:
         name: binaries
@@ -159,14 +162,13 @@ jobs:
 
     - name: Install security tools
       run: |
-        go install github.com/securecodewarrior/sast-scan@latest || true
         go install golang.org/x/vuln/cmd/govulncheck@latest
 
-    - name: Run basic security checks
+    - name: Run security checks
       run: |
         # Run govulncheck for vulnerability detection
         govulncheck ./...
-        echo "Basic security checks passed"
+        echo "✅ Security checks passed"
 
   docker:
     name: Docker build test
@@ -193,8 +195,6 @@ jobs:
     - name: Test Docker image
       run: |
         echo "Testing Docker image..."
-        # List available images to debug
-        docker images | grep kbvault || echo "No kbvault images found"
         # Test that the image exists and can be inspected
         if docker image inspect kbvault:test > /dev/null 2>&1; then
           echo "✅ Docker image built successfully"
@@ -203,8 +203,9 @@ jobs:
           exit 1
         fi
 
-  pr-checks-complete:
-    name: All PR checks passed
+  # Summary job for branch protection rules
+  ci-complete:
+    name: All checks passed
     needs: [lint, test, build, security, docker]
     runs-on: ubuntu-latest
     if: always()
@@ -212,23 +213,23 @@ jobs:
     - name: Check all jobs
       run: |
         if [[ "${{ needs.lint.result }}" != "success" ]]; then
-          echo "Lint check failed"
+          echo "❌ Lint check failed"
           exit 1
         fi
         if [[ "${{ needs.test.result }}" != "success" ]]; then
-          echo "Test check failed"
+          echo "❌ Test check failed"
           exit 1
         fi
         if [[ "${{ needs.build.result }}" != "success" ]]; then
-          echo "Build check failed"
+          echo "❌ Build check failed"
           exit 1
         fi
         if [[ "${{ needs.security.result }}" != "success" ]]; then
-          echo "Security check failed"
+          echo "❌ Security check failed"
           exit 1
         fi
         if [[ "${{ needs.docker.result }}" != "success" ]]; then
-          echo "Docker check failed"
+          echo "❌ Docker check failed"
           exit 1
         fi
-        echo "All PR checks passed! ✅"
+        echo "✅ All checks passed!"
