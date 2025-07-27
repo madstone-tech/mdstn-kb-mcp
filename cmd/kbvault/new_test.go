@@ -114,8 +114,12 @@ func TestOpenInEditor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set the EDITOR environment variable
 			oldEditor := os.Getenv("EDITOR")
-			os.Setenv("EDITOR", tt.editor)
-			defer os.Setenv("EDITOR", oldEditor)
+			if err := os.Setenv("EDITOR", tt.editor); err != nil {
+				t.Fatalf("Failed to set EDITOR: %v", err)
+			}
+			defer func() {
+				_ = os.Setenv("EDITOR", oldEditor)
+			}()
 
 			err := openInEditor(tt.filePath)
 			
@@ -138,8 +142,12 @@ func TestOpenInEditorDefaultEditor(t *testing.T) {
 
 	// Clear EDITOR environment variable to test default
 	oldEditor := os.Getenv("EDITOR")
-	os.Unsetenv("EDITOR")
-	defer os.Setenv("EDITOR", oldEditor)
+	if err := os.Unsetenv("EDITOR"); err != nil {
+		t.Fatalf("Failed to unset EDITOR: %v", err)
+	}
+	defer func() {
+		_ = os.Setenv("EDITOR", oldEditor)
+	}()
 
 	// This will try to use nano as default, which may not be available
 	// We'll just check that it doesn't panic
