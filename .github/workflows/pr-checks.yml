@@ -192,7 +192,10 @@ jobs:
     - name: Test Docker image
       run: |
         echo "Testing Docker image..."
-        docker run --rm kbvault:test --version
+        # Test that the image exists and can be inspected
+        docker image inspect kbvault:test
+        # Simple container test - just run help command which is the default
+        docker run --rm kbvault:test --help
 
   pr-checks-complete:
     name: All PR checks passed
