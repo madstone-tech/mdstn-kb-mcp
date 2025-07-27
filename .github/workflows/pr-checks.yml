@@ -1,0 +1,234 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+# Cancel in-progress workflows on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        check-latest: true
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-lint-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-lint-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Check go mod tidy
+      run: |
+        go mod tidy
+        git diff --exit-code go.mod go.sum
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        check-latest: true
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-1.24-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-1.24-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run tests
+      run: go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Check test coverage
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Test coverage: ${COVERAGE}%"
+        # Require at least 50% coverage for Session 2 (will increase to 80% in future sessions)
+        if awk "BEGIN {exit !($COVERAGE < 50)}"; then
+          echo "Test coverage is below 50% (${COVERAGE}%)"
+          exit 1
+        fi
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        check-latest: true
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-build-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Build binary
+      run: make build
+
+    - name: Test binary
+      run: |
+        ls -la bin/
+        chmod +x bin/kbvault
+        ./bin/kbvault --version
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: binaries
+        path: bin/
+        retention-days: 7
+
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        check-latest: true
+
+    - name: Install security tools
+      run: |
+        go install github.com/securecodewarrior/sast-scan@latest || true
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+
+    - name: Run basic security checks
+      run: |
+        # Run govulncheck for vulnerability detection
+        govulncheck ./...
+        echo "Basic security checks passed"
+
+  docker:
+    name: Docker build test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: kbvault:test
+        build-args: |
+          VERSION=test
+          COMMIT=${{ github.sha }}
+          BUILD_TIME=${{ github.run_id }}
+        outputs: type=docker
+
+    - name: Test Docker image
+      run: |
+        echo "Testing Docker image..."
+        # List available images to debug
+        docker images | grep kbvault || echo "No kbvault images found"
+        # Test that the image exists and can be inspected
+        if docker image inspect kbvault:test > /dev/null 2>&1; then
+          echo "✅ Docker image built successfully"
+        else
+          echo "❌ Docker image not found - build may have failed"
+          exit 1
+        fi
+
+  pr-checks-complete:
+    name: All PR checks passed
+    needs: [lint, test, build, security, docker]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Check all jobs
+      run: |
+        if [[ "${{ needs.lint.result }}" != "success" ]]; then
+          echo "Lint check failed"
+          exit 1
+        fi
+        if [[ "${{ needs.test.result }}" != "success" ]]; then
+          echo "Test check failed"
+          exit 1
+        fi
+        if [[ "${{ needs.build.result }}" != "success" ]]; then
+          echo "Build check failed"
+          exit 1
+        fi
+        if [[ "${{ needs.security.result }}" != "success" ]]; then
+          echo "Security check failed"
+          exit 1
+        fi
+        if [[ "${{ needs.docker.result }}" != "success" ]]; then
+          echo "Docker check failed"
+          exit 1
+        fi
+        echo "All PR checks passed! ✅"

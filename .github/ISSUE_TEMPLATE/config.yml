@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/madstone-tech/mdstn-kb-mcp/discussions
+    about: Ask questions, share ideas, and discuss kbVault with the community
+  - name: 📚 Documentation
+    url: https://github.com/madstone-tech/mdstn-kb-mcp/blob/main/README.md
+    about: Read the documentation for usage guides and examples
+  - name: 🔐 Security Issues
+    url: https://github.com/madstone-tech/mdstn-kb-mcp/security/advisories/new
+    about: Report security vulnerabilities privately
