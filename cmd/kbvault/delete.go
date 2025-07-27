@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -51,7 +52,12 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
-			defer storage.Close()
+			defer func() {
+				if closeErr := storage.Close(); closeErr != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", closeErr)
+				}
+			}()
 
 			query := args[0]
 
@@ -289,7 +295,7 @@ func deleteNotes(storage types.StorageBackend, notes []*types.Note) error {
 	for _, note := range notes {
 		fmt.Printf("Deleting '%s'...", note.Title)
 		
-		if err := storage.Delete(nil, note.FilePath); err != nil {
+		if err := storage.Delete(context.TODO(), note.FilePath); err != nil {
 			fmt.Printf(" FAILED: %v\n", err)
 			errors = append(errors, fmt.Sprintf("%s: %v", note.Title, err))
 		} else {

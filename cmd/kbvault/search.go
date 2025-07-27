@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/madstone-tech/mdstn-kb-mcp/internal/search"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage/local"
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -77,7 +75,12 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
-			defer storage.Close()
+			defer func() {
+				if closeErr := storage.Close(); closeErr != nil {
+					// Log error but don't fail the command (ignore write errors)
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to close storage: %v\n", closeErr)
+				}
+			}()
 
 			// Create search engine
 			searchOpts := search.DefaultOptions()
@@ -88,11 +91,15 @@ Examples:
 
 			// Handle index building
 			if buildIndex {
-				fmt.Fprintln(cmd.OutOrStdout(), "Building search index...")
+				if _, err := fmt.Fprintln(cmd.OutOrStdout(), "Building search index..."); err != nil {
+					return fmt.Errorf("failed to write output: %w", err)
+				}
 				if err := engine.BuildIndex(ctx); err != nil {
 					return fmt.Errorf("failed to build index: %w", err)
 				}
-				fmt.Fprintln(cmd.OutOrStdout(), "Search index built successfully")
+				if _, err := fmt.Fprintln(cmd.OutOrStdout(), "Search index built successfully"); err != nil {
+					return fmt.Errorf("failed to write output: %w", err)
+				}
 				return nil
 			}
 
@@ -174,23 +181,39 @@ Examples:
 
 func outputSearchList(w io.Writer, results []search.SearchResult) error {
 	if len(results) == 0 {
-		fmt.Fprintln(w, "No results found")
+		if _, err := fmt.Fprintln(w, "No results found"); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
 		return nil
 	}
 
-	fmt.Fprintf(w, "Found %d results:\n\n", len(results))
+	if _, err := fmt.Fprintf(w, "Found %d results:\n\n", len(results)); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
 
 	for i, result := range results {
-		fmt.Fprintf(w, "%d. %s\n", i+1, result.Note.Title)
-		fmt.Fprintf(w, "   ID: %s\n", result.Note.ID)
-		
-		if len(result.Note.Tags) > 0 {
-			fmt.Fprintf(w, "   Tags: %s\n", strings.Join(result.Note.Tags, ", "))
+		if _, err := fmt.Fprintf(w, "%d. %s\n", i+1, result.Note.Title); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+		if _, err := fmt.Fprintf(w, "   ID: %s\n", result.Note.ID); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
 		}
 		
-		fmt.Fprintf(w, "   Score: %.2f\n", result.Score)
-		fmt.Fprintf(w, "   Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04"))
-		fmt.Fprintln(w)
+		if len(result.Note.Tags) > 0 {
+			if _, err := fmt.Fprintf(w, "   Tags: %s\n", strings.Join(result.Note.Tags, ", ")); err != nil {
+				return fmt.Errorf("failed to write output: %w", err)
+			}
+		}
+		
+		if _, err := fmt.Fprintf(w, "   Score: %.2f\n", result.Score); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+		if _, err := fmt.Fprintf(w, "   Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04")); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+		if _, err := fmt.Fprintln(w); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
 	}
 
 	return nil
@@ -198,39 +221,67 @@ func outputSearchList(w io.Writer, results []search.SearchResult) error {
 
 func outputSearchDetailed(w io.Writer, results []search.SearchResult) error {
 	if len(results) == 0 {
-		fmt.Fprintln(w, "No results found")
-		return nil
+		_, err := fmt.Fprintln(w, "No results found")
+		return err
 	}
 
-	fmt.Fprintf(w, "Found %d results:\n\n", len(results))
+	if _, err := fmt.Fprintf(w, "Found %d results:\n\n", len(results)); err != nil {
+		return err
+	}
 
 	for i, result := range results {
-		fmt.Fprintf(w, "=== Result %d ===\n", i+1)
-		fmt.Fprintf(w, "Title: %s\n", result.Note.Title)
-		fmt.Fprintf(w, "ID: %s\n", result.Note.ID)
-		fmt.Fprintf(w, "Path: %s\n", result.Note.FilePath)
-		fmt.Fprintf(w, "Type: %s\n", result.Note.Type)
+		if _, err := fmt.Fprintf(w, "=== Result %d ===\n", i+1); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "Title: %s\n", result.Note.Title); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "ID: %s\n", result.Note.ID); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "Path: %s\n", result.Note.FilePath); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "Type: %s\n", result.Note.Type); err != nil {
+			return err
+		}
 		
 		if len(result.Note.Tags) > 0 {
-			fmt.Fprintf(w, "Tags: %s\n", strings.Join(result.Note.Tags, ", "))
-		}
-		
-		fmt.Fprintf(w, "Score: %.2f\n", result.Score)
-		fmt.Fprintf(w, "Created: %s\n", result.Note.CreatedAt.Format("2006-01-02 15:04:05"))
-		fmt.Fprintf(w, "Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04:05"))
-		
-		if result.Snippet != "" {
-			fmt.Fprintf(w, "\nSnippet:\n%s\n", result.Snippet)
-		}
-		
-		if len(result.Matches) > 0 {
-			fmt.Fprintf(w, "\nMatches:\n")
-			for _, match := range result.Matches {
-				fmt.Fprintf(w, "  - %s: %s\n", match.Field, match.Context)
+			if _, err := fmt.Fprintf(w, "Tags: %s\n", strings.Join(result.Note.Tags, ", ")); err != nil {
+				return err
 			}
 		}
 		
-		fmt.Fprintln(w)
+		if _, err := fmt.Fprintf(w, "Score: %.2f\n", result.Score); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "Created: %s\n", result.Note.CreatedAt.Format("2006-01-02 15:04:05")); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04:05")); err != nil {
+			return err
+		}
+		
+		if result.Snippet != "" {
+			if _, err := fmt.Fprintf(w, "\nSnippet:\n%s\n", result.Snippet); err != nil {
+				return err
+			}
+		}
+		
+		if len(result.Matches) > 0 {
+			if _, err := fmt.Fprintf(w, "\nMatches:\n"); err != nil {
+				return err
+			}
+			for _, match := range result.Matches {
+				if _, err := fmt.Fprintf(w, "  - %s: %s\n", match.Field, match.Context); err != nil {
+					return err
+				}
+			}
+		}
+		
+		if _, err := fmt.Fprintln(w); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -250,48 +301,3 @@ func outputSearchJSON(w io.Writer, results []search.SearchResult) error {
 	return encoder.Encode(output)
 }
 
-// Helper function to read note for searching
-func readNoteForSearch(storage types.StorageBackend, path string) (*types.Note, error) {
-	ctx := context.Background()
-	
-	// Read file content
-	data, err := storage.Read(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse frontmatter and content
-	content := string(data)
-	note := &types.Note{
-		FilePath: path,
-		Content:  content,
-	}
-
-	// Extract ID from filename
-	base := filepath.Base(path)
-	if strings.HasSuffix(base, ".md") {
-		note.ID = strings.TrimSuffix(base, ".md")
-	}
-
-	// Get file info
-	info, err := storage.Stat(ctx, path)
-	if err == nil {
-		note.Size = info.Size
-		note.CreatedAt = time.Unix(info.ModTime, 0)
-		note.UpdatedAt = time.Unix(info.ModTime, 0)
-	}
-
-	// Simple title extraction (first # heading or filename)
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "# ") {
-			note.Title = strings.TrimPrefix(line, "# ")
-			break
-		}
-	}
-	if note.Title == "" {
-		note.Title = strings.TrimSuffix(filepath.Base(path), ".md")
-	}
-
-	return note, nil
-}

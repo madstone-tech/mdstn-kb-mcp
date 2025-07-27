@@ -1,6 +1,7 @@
 package links
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -321,7 +322,7 @@ func TestBuilder_BuildFromNotes(t *testing.T) {
 	builder := NewBuilder(parser)
 	
 	notes := []*types.Note{note1, note2, note3}
-	graph, err := builder.BuildFromNotes(nil, notes)
+	graph, err := builder.BuildFromNotes(context.TODO(), notes)
 	
 	assert.NoError(t, err)
 	assert.NotNil(t, graph)

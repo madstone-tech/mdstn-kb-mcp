@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -51,7 +52,12 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
-			defer storage.Close()
+			defer func() {
+				if closeErr := storage.Close(); closeErr != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", closeErr)
+				}
+			}()
 
 			query := args[0]
 
@@ -179,7 +185,7 @@ func loadNoteByID(storage types.StorageBackend, noteID string) (*types.Note, err
 
 // readNote reads and parses a note from storage
 func readNote(storage types.StorageBackend, path string) (*types.Note, error) {
-	data, err := storage.Read(nil, path)
+	data, err := storage.Read(context.TODO(), path)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +269,7 @@ func editNote(storage types.StorageBackend, note *types.Note, editorOverride str
 	}
 
 	// Write back to storage
-	if err := storage.Write(nil, note.FilePath, modifiedContent); err != nil {
+	if err := storage.Write(context.TODO(), note.FilePath, modifiedContent); err != nil {
 		return fmt.Errorf("failed to save changes: %w", err)
 	}
 
@@ -308,7 +314,7 @@ func createAndEditNote(storage types.StorageBackend, title, editorOverride strin
 	}
 
 	// Write to storage
-	if err := storage.Write(nil, filePath, finalContent); err != nil {
+	if err := storage.Write(context.TODO(), filePath, finalContent); err != nil {
 		return fmt.Errorf("failed to save new note: %w", err)
 	}
 
@@ -363,7 +369,7 @@ func generateNoteID(title string) string {
 
 // listAllNotesGeneric lists all notes using the generic storage interface
 func listAllNotesGeneric(storage types.StorageBackend) ([]*types.NoteMetadata, error) {
-	files, err := storage.List(nil, "")
+	files, err := storage.List(context.TODO(), "")
 	if err != nil {
 		return nil, err
 	}
