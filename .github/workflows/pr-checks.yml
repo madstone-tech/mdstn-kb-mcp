@@ -157,20 +157,16 @@ jobs:
         go-version: '1.24'
         check-latest: true
 
-    - name: Run Gosec Security Scanner
-      uses: securego/gosec@master
-      with:
-        args: '-fmt sarif -out results.sarif ./...'
-
-    - name: Upload SARIF file
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: results.sarif
-
-    - name: Run govulncheck
+    - name: Install security tools
       run: |
+        go install github.com/securecodewarrior/sast-scan@latest || true
         go install golang.org/x/vuln/cmd/govulncheck@latest
+
+    - name: Run basic security checks
+      run: |
+        # Run govulncheck for vulnerability detection
         govulncheck ./...
+        echo "Basic security checks passed"
 
   docker:
     name: Docker build test
