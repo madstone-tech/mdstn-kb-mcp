@@ -9,8 +9,13 @@ import (
 )
 
 func TestLoadTemplate(t *testing.T) {
-	// Create a temporary directory for templates
+	// Create a temporary directory structure that matches what loadTemplate expects
 	tempDir := t.TempDir()
+	templatesDir := filepath.Join(tempDir, "templates")
+	err := os.MkdirAll(templatesDir, 0755)
+	if err != nil {
+		t.Fatalf("Failed to create templates directory: %v", err)
+	}
 	
 	// Create a test template
 	testTemplate := `# {{.Title}}
@@ -20,35 +25,38 @@ Created: {{.Created.Format "2006-01-02"}}
 
 Content goes here...`
 
-	templatePath := filepath.Join(tempDir, "test.md")
-	err := os.WriteFile(templatePath, []byte(testTemplate), 0644)
+	templatePath := filepath.Join(templatesDir, "test.md")
+	err = os.WriteFile(templatePath, []byte(testTemplate), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	// Change to the temp directory so loadTemplate can find the templates
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current directory: %v", err)
+	}
+	defer func() { _ = os.Chdir(oldWd) }()
+	
+	err = os.Chdir(tempDir)
+	if err != nil {
+		t.Fatalf("Failed to change directory: %v", err)
 	}
 
 	tests := []struct {
 		name         string
 		templateName string
-		title        string
-		tags         []string
 		wantErr      bool
-		wantContains []string
 	}{
 		{
 			name:         "valid_template",
 			templateName: "test",
-			title:        "Test Note",
-			tags:         []string{"test", "example"},
 			wantErr:      false,
-			wantContains: []string{"# Test Note", "Tags: test, example"},
 		},
 		{
 			name:         "nonexistent_template",
 			templateName: "nonexistent",
-			title:        "Test Note",
-			tags:         []string{},
 			wantErr:      true,
-			wantContains: []string{},
 		},
 	}
 
@@ -142,7 +150,7 @@ func TestOpenInEditorDefaultEditor(t *testing.T) {
 	}()
 
 	// Call the function - it may error if nano is not available, which is fine
-	openInEditor(tempFile)
+	_ = openInEditor(tempFile)
 }
 
 func TestFindVaultRoot(t *testing.T) {
