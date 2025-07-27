@@ -74,6 +74,15 @@ func (m *Manager) GetConfig() *types.Config {
 	return m.config
 }
 
+// SaveToFile saves the given configuration to a file
+func (m *Manager) SaveToFile(config *types.Config, path string) error {
+	oldConfig := m.config
+	m.config = config
+	defer func() { m.config = oldConfig }()
+	
+	return m.WriteToFile(path)
+}
+
 // WriteToFile writes the current configuration to a file
 func (m *Manager) WriteToFile(path string) error {
 	if m.config == nil {
