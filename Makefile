@@ -1,106 +1,108 @@
 # kbVault Makefile
+.PHONY: help build test clean lint fmt vet deps dev-deps tools install
 
-.PHONY: help build test clean dev lint fmt vet install
+# Build information
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
-# Build configuration
-BINARY_NAME=kbvault
-BINARY_DIR=bin
-MAIN_PATH=./cmd/kbvault
-VERSION?=dev
-COMMIT_HASH?=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-BUILD_TIME?=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+# Go build flags
+LDFLAGS = -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildTime=$(BUILD_TIME)
+BUILD_FLAGS = -ldflags "$(LDFLAGS)"
 
-# Go configuration
-GOFLAGS=-ldflags="-X main.Version=${VERSION} -X main.CommitHash=${COMMIT_HASH} -X main.BuildTime=${BUILD_TIME}"
+# Directories
+BIN_DIR = bin
+PKG_DIR = pkg
+INTERNAL_DIR = internal
+CMD_DIR = cmd
 
+# Default target
 help: ## Show this help message
-	@echo "kbVault - Knowledge Base Vault"
+	@echo "kbVault - High-performance Go knowledge management tool"
 	@echo ""
-	@echo "Available commands:"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo "Available targets:"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## Build the binary
-	@echo "Building kbVault..."
-	@mkdir -p $(BINARY_DIR)
-	@go build $(GOFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME) $(MAIN_PATH)
-	@echo "Binary built: $(BINARY_DIR)/$(BINARY_NAME)"
+# Build targets
+build: ## Build the kbvault binary
+	@echo "Building kbvault..."
+	@mkdir -p $(BIN_DIR)
+	go build $(BUILD_FLAGS) -o $(BIN_DIR)/kbvault ./$(CMD_DIR)/kbvault
 
-test: ## Run tests
-	@echo "Running tests..."
-	@go test -v ./...
+build-all: ## Build binaries for all platforms
+	@echo "Building for all platforms..."
+	@mkdir -p $(BIN_DIR)
+	GOOS=linux GOARCH=amd64 go build $(BUILD_FLAGS) -o $(BIN_DIR)/kbvault-linux-amd64 ./$(CMD_DIR)/kbvault
+	GOOS=darwin GOARCH=amd64 go build $(BUILD_FLAGS) -o $(BIN_DIR)/kbvault-darwin-amd64 ./$(CMD_DIR)/kbvault
+	GOOS=darwin GOARCH=arm64 go build $(BUILD_FLAGS) -o $(BIN_DIR)/kbvault-darwin-arm64 ./$(CMD_DIR)/kbvault
+
+# Development targets
+dev: ## Build and run in development mode
+	go run $(BUILD_FLAGS) ./$(CMD_DIR)/kbvault
+
+install: ## Install kbvault to GOPATH/bin
+	go install $(BUILD_FLAGS) ./$(CMD_DIR)/kbvault
+
+# Testing targets
+test: ## Run all tests
+	go test -v -race ./...
 
 test-coverage: ## Run tests with coverage
-	@echo "Running tests with coverage..."
-	@go test -v -coverprofile=coverage.out ./...
-	@go tool cover -html=coverage.out -o coverage.html
+	go test -v -race -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
 
-clean: ## Clean build artifacts
-	@echo "Cleaning build artifacts..."
-	@rm -rf $(BINARY_DIR)
-	@rm -f coverage.out coverage.html
-	@go clean
+test-integration: ## Run integration tests (requires test environment)
+	go test -v -race -tags=integration ./...
 
-dev: ## Run in development mode
-	@echo "Running in development mode..."
-	@go run $(MAIN_PATH) --dev
+benchmark: ## Run benchmarks
+	go test -v -bench=. -benchmem ./...
 
-lint: ## Run linter
-	@echo "Running linter..."
-	@golangci-lint run
-
-fmt: ## Format code
-	@echo "Formatting code..."
-	@go fmt ./...
+# Code quality targets
+fmt: ## Format Go code
+	go fmt ./...
 
 vet: ## Run go vet
-	@echo "Running go vet..."
-	@go vet ./...
+	go vet ./...
 
-install: build ## Install binary to GOPATH/bin
-	@echo "Installing kbVault..."
-	@cp $(BINARY_DIR)/$(BINARY_NAME) $(GOPATH)/bin/
-	@echo "Installed: $(GOPATH)/bin/$(BINARY_NAME)"
+lint: ## Run golangci-lint (requires golangci-lint to be installed)
+	golangci-lint run
 
+check: fmt vet lint test ## Run all checks (format, vet, lint, test)
+
+# Dependency management
 deps: ## Download dependencies
-	@echo "Downloading dependencies..."
-	@go mod download
-	@go mod tidy
+	go mod download
+	go mod tidy
 
-deps-update: ## Update dependencies
-	@echo "Updating dependencies..."
-	@go get -u ./...
-	@go mod tidy
+dev-deps: ## Install development dependencies
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
-# Build for multiple platforms
-build-all: ## Build for all platforms
-	@echo "Building for all platforms..."
-	@mkdir -p $(BINARY_DIR)
-	@GOOS=linux GOARCH=amd64 go build $(GOFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
-	@GOOS=darwin GOARCH=amd64 go build $(GOFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
-	@GOOS=darwin GOARCH=arm64 go build $(GOFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
-	@GOOS=windows GOARCH=amd64 go build $(GOFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
-	@echo "Built binaries:"
-	@ls -la $(BINARY_DIR)/
+tools: dev-deps ## Install all development tools
 
-# Development shortcuts
-run: ## Run the application
-	@go run $(MAIN_PATH)
+# Utility targets
+clean: ## Clean build artifacts
+	rm -rf $(BIN_DIR)
+	rm -f coverage.out coverage.html
 
-debug: ## Run with debug logging
-	@KBVAULT_LOG_LEVEL=DEBUG go run $(MAIN_PATH)
+version: ## Show version information
+	@echo "Version: $(VERSION)"
+	@echo "Commit:  $(COMMIT)"
+	@echo "Built:   $(BUILD_TIME)"
 
-# Initialize development environment
-init-dev: ## Initialize development environment
-	@echo "Initializing development environment..."
-	@go mod download
-	@mkdir -p configs
-	@mkdir -p test/fixtures
+# Development workflow targets
+setup: tools deps ## Set up development environment
 	@echo "Development environment ready!"
 
-# Example vault for testing
-test-vault: ## Create example vault for testing
-	@echo "Creating test vault..."
-	@mkdir -p test/example-vault/notes
-	@echo "---\ntitle: Example Note\ntags: [example]\n---\n\n# Example Note\n\nThis is an example note for testing." > test/example-vault/notes/example.md
-	@echo "Test vault created: test/example-vault"
+quick: fmt vet test ## Quick development check (format, vet, test)
+
+# CI targets (for GitHub Actions)
+ci-test: ## CI test target
+	go test -v -race -coverprofile=coverage.out ./...
+
+ci-build: ## CI build target
+	go build $(BUILD_FLAGS) -o $(BIN_DIR)/kbvault ./$(CMD_DIR)/kbvault
+
+# Generate targets (for future use)
+generate: ## Run go generate
+	go generate ./...
