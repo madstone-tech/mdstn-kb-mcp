@@ -1,0 +1,303 @@
+# golangci-lint configuration for kbVault
+# See: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - vendor
+    - .git
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*_generated\\.go$"
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters-settings:
+  dupl:
+    threshold: 100
+  
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (*os.File).Close
+      - (*database/sql.Rows).Close
+  
+  exhaustive:
+    check-generated: false
+    default-signifies-exhaustive: false
+  
+  funlen:
+    lines: 100
+    statements: 50
+  
+  gci:
+    local-prefixes: github.com/madstone-tech/mdstn-kb-mcp
+  
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+  
+  gocyclo:
+    min-complexity: 15
+  
+  godot:
+    scope: declarations
+    capital: false
+  
+  gofmt:
+    simplify: true
+  
+  goimports:
+    local-prefixes: github.com/madstone-tech/mdstn-kb-mcp
+  
+  golint:
+    min-confidence: 0
+  
+  gomnd:
+    settings:
+      mnd:
+        checks:
+          - argument
+          - case
+          - condition
+          - operation
+          - return
+  
+  govet:
+    check-shadowing: true
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  
+  lll:
+    line-length: 140
+  
+  maligned:
+    suggest-new: true
+  
+  misspell:
+    locale: US
+    ignore-words:
+      - "kbvault"
+      - "ulid"
+      - "mdstn"
+  
+  nakedret:
+    max-func-lines: 30
+  
+  nestif:
+    min-complexity: 4
+  
+  nolintlint:
+    allow-leading-space: true
+    allow-unused: false
+    require-explanation: false
+    require-specific: false
+  
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+  
+  revive:
+    min-confidence: 0
+    rules:
+      - name: atomic
+      - name: line-length-limit
+        arguments: [140]
+      - name: empty-block
+      - name: superfluous-else
+      - name: confusing-naming
+      - name: get-return
+      - name: defer
+      - name: if-return
+      - name: increment-decrement
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-lines
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+  
+  staticcheck:
+    go: "1.23"
+    checks: ["all"]
+  
+  stylecheck:
+    go: "1.23"
+    checks: ["all", "-ST1000", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022"]
+  
+  tagliatelle:
+    case:
+      rules:
+        json: snake
+        yaml: snake
+        xml: camel
+        bson: camel
+        avro: snake
+        mapstructure: kebab
+  
+  testpackage:
+    skip-regexp: (export|internal)_test\.go
+  
+  unparam:
+    check-exported: false
+  
+  unused:
+    go: "1.23"
+  
+  whitespace:
+    multi-if: false
+    multi-func: false
+  
+  wrapcheck:
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+
+linters:
+  enable:
+    - asciicheck
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - forbidigo
+    - funlen
+    - gci
+    - gochecknoinits
+    - gochecknoglobals
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - golint
+    - gomnd
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - lll
+    - makezero
+    - maligned
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nlreturn
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - tagliatelle
+    - thelper
+    - tparallel
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    - wsl
+  
+  disable:
+    - cyclop
+    - gochecknoglobals  # We use some global variables for configuration
+    - goerr113          # We use dynamic errors in some cases
+    - ireturn           # We return interfaces in some cases
+    - varnamelen        # Short variable names are sometimes appropriate
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocritic
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+        - gocognit
+        - lll
+    
+    - path: cmd/
+      linters:
+        - gochecknoinits
+    
+    - path: pkg/types/
+      linters:
+        - maligned  # Struct optimization is less important for type definitions
+    
+    - linters:
+        - staticcheck
+      text: "SA9003:"
+    
+    - linters:
+        - lll
+      source: "^//go:generate "
+  
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+
+severity:
+  default-severity: error
+  case-sensitive: false

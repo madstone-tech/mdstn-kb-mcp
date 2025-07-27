@@ -1,0 +1,218 @@
+name: PR Feedback
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, ready_for_review]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  pr-feedback:
+    name: PR Quality Feedback
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check PR title format
+      id: title-check
+      run: |
+        TITLE="${{ github.event.pull_request.title }}"
+        if [[ $TITLE =~ ^(feat|fix|docs|style|refactor|test|chore|ci|perf)(\(.+\))?\!?:\ .+ ]]; then
+          echo "title_valid=true" >> $GITHUB_OUTPUT
+          echo "✅ PR title follows conventional commit format"
+        else
+          echo "title_valid=false" >> $GITHUB_OUTPUT
+          echo "❌ PR title should follow conventional commit format"
+          echo "Examples: 'feat: add new feature', 'fix: resolve bug', 'docs: update readme'"
+        fi
+
+    - name: Check PR description
+      id: description-check
+      run: |
+        DESCRIPTION="${{ github.event.pull_request.body }}"
+        if [[ ${#DESCRIPTION} -gt 50 ]]; then
+          echo "description_valid=true" >> $GITHUB_OUTPUT
+          echo "✅ PR has detailed description"
+        else
+          echo "description_valid=false" >> $GITHUB_OUTPUT
+          echo "❌ PR description is too short (less than 50 characters)"
+        fi
+
+    - name: Check if PR links issues
+      id: issue-check
+      run: |
+        DESCRIPTION="${{ github.event.pull_request.body }}"
+        if [[ $DESCRIPTION =~ (Fixes|Closes|Resolves)\ #[0-9]+ ]] || [[ $DESCRIPTION =~ (fixes|closes|resolves)\ #[0-9]+ ]]; then
+          echo "links_issues=true" >> $GITHUB_OUTPUT
+          echo "✅ PR links to issues"
+        else
+          echo "links_issues=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Consider linking related issues using 'Fixes #123' or 'Closes #123'"
+        fi
+
+    - name: Check file changes
+      id: changes-check
+      run: |
+        FILES_CHANGED=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | wc -l)
+        echo "files_changed=$FILES_CHANGED" >> $GITHUB_OUTPUT
+        
+        if [ $FILES_CHANGED -gt 50 ]; then
+          echo "large_pr=true" >> $GITHUB_OUTPUT
+          echo "⚠️ Large PR detected ($FILES_CHANGED files changed). Consider breaking into smaller PRs."
+        else
+          echo "large_pr=false" >> $GITHUB_OUTPUT
+          echo "✅ Reasonable PR size ($FILES_CHANGED files changed)"
+        fi
+
+    - name: Check for test files
+      id: test-check
+      run: |
+        TEST_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep "_test\.go$" | wc -l)
+        GO_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep "\.go$" | grep -v "_test\.go$" | wc -l)
+        
+        echo "test_files=$TEST_FILES" >> $GITHUB_OUTPUT
+        echo "go_files=$GO_FILES" >> $GITHUB_OUTPUT
+        
+        if [ $GO_FILES -gt 0 ] && [ $TEST_FILES -eq 0 ]; then
+          echo "has_tests=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Go files changed but no test files added/modified"
+        else
+          echo "has_tests=true" >> $GITHUB_OUTPUT
+          echo "✅ Test files included or no Go files changed"
+        fi
+
+    - name: Check for documentation updates
+      id: docs-check
+      run: |
+        DOCS_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -E "\.(md|rst|txt)$" | wc -l)
+        GO_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep "\.go$" | grep -v "_test\.go$" | wc -l)
+        
+        echo "docs_files=$DOCS_FILES" >> $GITHUB_OUTPUT
+        
+        if [ $GO_FILES -gt 5 ] && [ $DOCS_FILES -eq 0 ]; then
+          echo "docs_updated=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Significant code changes but no documentation updated"
+        else
+          echo "docs_updated=true" >> $GITHUB_OUTPUT
+          echo "✅ Documentation updated or minor changes"
+        fi
+
+    - name: Generate PR feedback comment
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const titleValid = '${{ steps.title-check.outputs.title_valid }}' === 'true';
+          const descriptionValid = '${{ steps.description-check.outputs.description_valid }}' === 'true';
+          const linksIssues = '${{ steps.issue-check.outputs.links_issues }}' === 'true';
+          const largePR = '${{ steps.changes-check.outputs.large_pr }}' === 'true';
+          const hasTests = '${{ steps.test-check.outputs.has_tests }}' === 'true';
+          const docsUpdated = '${{ steps.docs-check.outputs.docs_updated }}' === 'true';
+          
+          const filesChanged = '${{ steps.changes-check.outputs.files_changed }}';
+          const testFiles = '${{ steps.test-check.outputs.test_files }}';
+          const goFiles = '${{ steps.test-check.outputs.go_files }}';
+          
+          let feedback = '## 🤖 PR Quality Check\n\n';
+          
+          // Title check
+          if (titleValid) {
+            feedback += '✅ **Title**: Follows conventional commit format\n';
+          } else {
+            feedback += '❌ **Title**: Should follow conventional commit format\n';
+            feedback += '   - Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`\n';
+            feedback += '   - See [Conventional Commits](https://conventionalcommits.org/) for more info\n';
+          }
+          
+          // Description check
+          if (descriptionValid) {
+            feedback += '✅ **Description**: Detailed description provided\n';
+          } else {
+            feedback += '❌ **Description**: Too short (less than 50 characters)\n';
+            feedback += '   - Please provide more details about what this PR does\n';
+            feedback += '   - Include context, motivation, and implementation details\n';
+          }
+          
+          // Issue linking
+          if (linksIssues) {
+            feedback += '✅ **Issues**: Links to related issues\n';
+          } else {
+            feedback += '⚠️ **Issues**: Consider linking related issues\n';
+            feedback += '   - Use `Fixes #123`, `Closes #123`, or `Resolves #123`\n';
+          }
+          
+          // PR size
+          if (largePR) {
+            feedback += `⚠️ **Size**: Large PR (${filesChanged} files changed)\n`;
+            feedback += '   - Consider breaking into smaller, focused PRs\n';
+            feedback += '   - Large PRs are harder to review and more likely to have issues\n';
+          } else {
+            feedback += `✅ **Size**: Reasonable PR size (${filesChanged} files changed)\n`;
+          }
+          
+          // Tests
+          if (hasTests || goFiles === '0') {
+            if (testFiles > 0) {
+              feedback += `✅ **Tests**: Test files included (${testFiles} test files)\n`;
+            } else {
+              feedback += '✅ **Tests**: No Go files changed or tests included\n';
+            }
+          } else {
+            feedback += `⚠️ **Tests**: ${goFiles} Go files changed but no test files\n`;
+            feedback += '   - Please add tests for new functionality\n';
+            feedback += '   - Maintain test coverage ≥80%\n';
+          }
+          
+          // Documentation
+          if (docsUpdated || goFiles <= '5') {
+            feedback += '✅ **Documentation**: Appropriately updated\n';
+          } else {
+            feedback += '⚠️ **Documentation**: Consider updating documentation\n';
+            feedback += '   - Update README.md if user-facing changes\n';
+            feedback += '   - Add code comments for complex logic\n';
+          }
+          
+          feedback += '\n## 📋 Pre-merge Checklist\n\n';
+          feedback += 'Before merging, ensure:\n';
+          feedback += '- [ ] All CI checks pass\n';
+          feedback += '- [ ] Code review approved\n';
+          feedback += '- [ ] Test coverage maintained\n';
+          feedback += '- [ ] Documentation updated (if needed)\n';
+          feedback += '- [ ] Breaking changes documented\n\n';
+          
+          feedback += '---\n';
+          feedback += '*This is an automated check. For questions, see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)*';
+          
+          // Find existing bot comment
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.data.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('🤖 PR Quality Check')
+          );
+          
+          if (botComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: feedback
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: feedback
+            });
+          }
