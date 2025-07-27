@@ -33,9 +33,10 @@ jobs:
 
     - name: Check PR description
       id: description-check
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
       run: |
-        DESCRIPTION="${{ github.event.pull_request.body }}"
-        if [[ ${#DESCRIPTION} -gt 50 ]]; then
+        if [[ ${#PR_BODY} -gt 50 ]]; then
           echo "description_valid=true" >> $GITHUB_OUTPUT
           echo "✅ PR has detailed description"
         else
@@ -45,9 +46,10 @@ jobs:
 
     - name: Check if PR links issues
       id: issue-check
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
       run: |
-        DESCRIPTION="${{ github.event.pull_request.body }}"
-        if [[ $DESCRIPTION =~ (Fixes|Closes|Resolves)\ #[0-9]+ ]] || [[ $DESCRIPTION =~ (fixes|closes|resolves)\ #[0-9]+ ]]; then
+        if [[ $PR_BODY =~ (Fixes|Closes|Resolves)\ #[0-9]+ ]] || [[ $PR_BODY =~ (fixes|closes|resolves)\ #[0-9]+ ]]; then
           echo "links_issues=true" >> $GITHUB_OUTPUT
           echo "✅ PR links to issues"
         else
