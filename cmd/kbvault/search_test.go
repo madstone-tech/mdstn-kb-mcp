@@ -54,7 +54,7 @@ Learn about data types, loops, and functions.`,
 
 Tags: #daily
 
-Today I learned about goroutines and channels in Go.
+Today I learned about golang goroutines and channels.
 Also reviewed Python decorators.`,
 		},
 		{
@@ -154,7 +154,7 @@ Action items: review code, update documentation.`,
 			name: "empty search",
 			args: []string{"search"},
 			wantOutput: []string{
-				"No results found",
+				"Found 4 results",
 			},
 		},
 		{

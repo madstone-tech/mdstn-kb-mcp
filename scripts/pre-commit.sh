@@ -35,7 +35,10 @@ go vet ./...
 print_status "✅ go vet passed" $GREEN
 
 print_status "4. Running tests with race detection..." $YELLOW
-go test -v -race -coverprofile=coverage.out ./...
+if ! go test -v -race -coverprofile=coverage.out ./...; then
+    print_status "❌ Tests failed" $RED
+    exit 1
+fi
 print_status "✅ Tests passed" $GREEN
 
 print_status "5. Checking test coverage..." $YELLOW
@@ -58,14 +61,20 @@ fi
 
 print_status "7. Running golangci-lint..." $YELLOW
 if command -v golangci-lint >/dev/null 2>&1; then
-    golangci-lint run --timeout=5m
+    if ! golangci-lint run --timeout=5m; then
+        print_status "❌ Linting failed" $RED
+        exit 1
+    fi
     print_status "✅ Linting passed" $GREEN
 else
     print_status "⚠️  golangci-lint not found, skipping (install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)" $YELLOW
 fi
 
 print_status "8. Building binary..." $YELLOW
-make build
+if ! make build; then
+    print_status "❌ Build failed" $RED
+    exit 1
+fi
 print_status "✅ Build successful" $GREEN
 
 print_status "9. Testing binary..." $YELLOW

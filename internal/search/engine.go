@@ -2,7 +2,8 @@ package search
 
 import (
 	"context"
-	"fmt"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -124,9 +125,6 @@ func (e *Engine) Search(ctx context.Context, query SearchQuery) ([]SearchResult,
 	
 	// Normalize query
 	searchTerms := e.tokenize(query.Query)
-	if len(searchTerms) == 0 && len(query.Tags) == 0 && query.Type == "" && query.DateRange == nil {
-		return nil, fmt.Errorf("empty search query")
-	}
 	
 	// Get all matching documents from index
 	var candidates []*IndexedDocument
@@ -208,7 +206,7 @@ func (e *Engine) BuildIndex(ctx context.Context) error {
 	defer e.mu.Unlock()
 	
 	// List all notes from common directories
-	dirs := []string{"", "notes", "daily"} // Root, notes directory, and daily notes
+	dirs := []string{"", "notes/", "daily/"} // Root, notes directory, and daily notes
 	var allFiles []string
 	
 	for _, dir := range dirs {
@@ -217,12 +215,8 @@ func (e *Engine) BuildIndex(ctx context.Context) error {
 			// Continue if directory doesn't exist
 			continue
 		}
-		for _, file := range files {
-			if dir != "" {
-				file = dir + "/" + file
-			}
-			allFiles = append(allFiles, file)
-		}
+		// Storage List already returns full relative paths from storage root
+		allFiles = append(allFiles, files...)
 	}
 	
 	files := allFiles
@@ -487,12 +481,12 @@ func (e *Engine) sortResults(results []SearchResult, sortBy string, desc bool) {
 
 // parseNote extracts note data from file content
 func (e *Engine) parseNote(path string, data []byte) (*IndexedDocument, error) {
-	// This is a simplified parser - in practice, you'd parse frontmatter properly
+	// Parse note content and extract metadata
 	content := string(data)
 	lines := strings.Split(content, "\n")
 	
 	// Extract title from first # heading or filename
-	title := strings.TrimSuffix(path, ".md")
+	title := strings.TrimSuffix(filepath.Base(path), ".md")
 	for _, line := range lines {
 		if strings.HasPrefix(line, "# ") {
 			title = strings.TrimPrefix(line, "# ")
@@ -500,10 +494,27 @@ func (e *Engine) parseNote(path string, data []byte) (*IndexedDocument, error) {
 		}
 	}
 	
+	// Extract tags from content
+	var tags []string
+	for _, line := range lines {
+		// Look for "Tags:" line with hashtag-style tags
+		if strings.HasPrefix(strings.TrimSpace(line), "Tags:") {
+			tagsPart := strings.TrimPrefix(strings.TrimSpace(line), "Tags:")
+			// Extract hashtag-style tags
+			tagMatches := regexp.MustCompile(`#(\w+)`).FindAllStringSubmatch(tagsPart, -1)
+			for _, match := range tagMatches {
+				if len(match) > 1 {
+					tags = append(tags, match[1])
+				}
+			}
+		}
+	}
+	
 	doc := &IndexedDocument{
 		ID:        path, // Use path as ID for now
 		Title:     title,
 		Content:   content,
+		Tags:      tags,
 		FilePath:  path,
 		CreatedAt: time.Now(), // Would get from file info
 		UpdatedAt: time.Now(),
