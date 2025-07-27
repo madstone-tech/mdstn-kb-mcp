@@ -242,3 +242,15 @@ func formatRelativeTime(t time.Time) string {
 		return t.Format("2006-01-02")
 	}
 }
+
+func formatTagsJSON(tags []string) string {
+	if len(tags) == 0 {
+		return ""
+	}
+	
+	quotedTags := make([]string, len(tags))
+	for i, tag := range tags {
+		quotedTags[i] = fmt.Sprintf(`"%s"`, tag)
+	}
+	return strings.Join(quotedTags, ", ")
+}

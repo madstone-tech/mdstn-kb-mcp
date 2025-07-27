@@ -157,15 +157,3 @@ func displayNoteJSON(note *types.Note) error {
 	return nil
 }
 
-func formatTagsJSON(tags []string) string {
-	if len(tags) == 0 {
-		return ""
-	}
-
-	quoted := make([]string, len(tags))
-	for i, tag := range tags {
-		quoted[i] = fmt.Sprintf(`"%s"`, tag)
-	}
-
-	return strings.Join(quoted, ", ")
-}
