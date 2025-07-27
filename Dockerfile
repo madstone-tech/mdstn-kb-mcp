@@ -18,8 +18,11 @@ COPY . .
 
 # Build the application
 # Note: This will be overridden by GoReleaser, but kept for manual builds
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
-    -ldflags='-w -s -extldflags "-static"' \
+    -ldflags="-w -s -extldflags '-static' -X main.version=${VERSION} -X main.commitHash=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
     -o kbvault ./cmd/kbvault
 
 # Final stage - minimal runtime image
