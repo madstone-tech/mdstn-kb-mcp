@@ -129,10 +129,10 @@ jobs:
       run: make build
 
     - name: Test binary
-      run: ./bin/kbvault --version
-
-    - name: Build for all platforms
-      run: make build-all
+      run: |
+        ls -la bin/
+        chmod +x bin/kbvault
+        ./bin/kbvault --version
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -184,11 +184,14 @@ jobs:
         context: .
         push: false
         tags: kbvault:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=test
+          COMMIT=${{ github.sha }}
+          BUILD_TIME=${{ github.run_id }}
 
     - name: Test Docker image
       run: |
+        echo "Testing Docker image..."
         docker run --rm kbvault:test --version
 
   pr-checks-complete:

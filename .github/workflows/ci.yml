@@ -101,7 +101,10 @@ jobs:
       run: make build
 
     - name: Test binary
-      run: ./bin/kbvault --version
+      run: |
+        ls -la bin/
+        chmod +x bin/kbvault
+        ./bin/kbvault --version
 
   security:
     name: Security scan
@@ -142,9 +145,12 @@ jobs:
         context: .
         push: false
         tags: kbvault:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=test
+          COMMIT=${{ github.sha }}
+          BUILD_TIME=${{ github.run_id }}
 
     - name: Test Docker image
       run: |
+        echo "Testing Docker image..."
         docker run --rm kbvault:test --version
