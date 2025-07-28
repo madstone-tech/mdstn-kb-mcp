@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage/local"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -41,19 +41,19 @@ Examples:
   kbvault edit "new topic" --create`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load configuration
-			cfg, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
+			// Get profile-aware configuration
+			cfg := getConfig()
+			if cfg == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
-			// Initialize storage
-			storage, err := local.New(cfg.Storage.Local)
+			// Initialize storage backend
+			storageBackend, err := storage.CreateStorage(cfg.Storage)
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
 			defer func() {
-				if closeErr := storage.Close(); closeErr != nil {
+				if closeErr := storageBackend.Close(); closeErr != nil {
 					// Log error but don't fail the command
 					fmt.Printf("Warning: failed to close storage: %v\n", closeErr)
 				}
@@ -62,16 +62,16 @@ Examples:
 			query := args[0]
 
 			// Find the note
-			note, err := findNoteByQuery(storage, query)
+			note, err := findNoteByQuery(storageBackend, query)
 			if err != nil {
 				if createNew {
-					return createAndEditNote(storage, query, editor)
+					return createAndEditNote(storageBackend, query, editor)
 				}
 				return fmt.Errorf("note not found: %w", err)
 			}
 
 			// Edit the note
-			return editNote(storage, note, editor)
+			return editNote(storageBackend, note, editor)
 		},
 	}
 

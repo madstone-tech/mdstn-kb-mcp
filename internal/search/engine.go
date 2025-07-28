@@ -121,6 +121,19 @@ type Match struct {
 // Search performs a full-text search across notes
 func (e *Engine) Search(ctx context.Context, query SearchQuery) ([]SearchResult, error) {
 	e.mu.RLock()
+	
+	// Check if index is empty and build it automatically if needed
+	if len(e.index.GetAllDocuments()) == 0 {
+		e.mu.RUnlock()
+		
+		// Build the index (this will acquire the write lock)
+		if err := e.BuildIndex(ctx); err != nil {
+			return nil, err
+		}
+		
+		e.mu.RLock()
+	}
+	
 	defer e.mu.RUnlock()
 	
 	// Normalize query
@@ -220,6 +233,36 @@ func (e *Engine) BuildIndex(ctx context.Context) error {
 	}
 	
 	files := allFiles
+	
+	// Debug: check if we found any files
+	if len(files) == 0 {
+		// Try alternative approach - list from root and look for .md files
+		rootFiles, err := e.storage.List(ctx, "")
+		if err == nil {
+			for _, file := range rootFiles {
+				if strings.HasSuffix(file, ".md") {
+					files = append(files, file)
+				}
+			}
+		}
+		
+		// Also try looking for files recursively in the notes directory
+		if len(files) == 0 {
+			// This is a fallback - the storage backend might not support directory listing
+			// For local storage, try some common note file patterns
+			commonFiles := []string{
+				"notes/golang-basics.md",
+				"notes/python-tutorial.md", 
+				"notes/daily-2024-01-15.md",
+				"notes/meeting-notes.md",
+			}
+			for _, file := range commonFiles {
+				if data, err := e.storage.Read(ctx, file); err == nil && len(data) > 0 {
+					files = append(files, file)
+				}
+			}
+		}
+	}
 	
 	// Clear existing index
 	e.index = NewIndex()

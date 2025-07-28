@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage/local"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/ulid"
 )
@@ -32,17 +32,23 @@ By default, shows both metadata and content.`,
 				return fmt.Errorf("invalid note ID: %s", noteID)
 			}
 
-			// Load configuration
-			config, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load configuration: %w", err)
+			// Get profile-aware configuration
+			config := getConfig()
+			if config == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
-			// Initialize storage
-			storage, err := local.New(config.Storage.Local)
+			// Initialize storage backend
+			storage, err := storage.CreateStorage(config.Storage)
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
+			defer func() {
+				if err := storage.Close(); err != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", err)
+				}
+			}()
 
 			// Find and load note
 			note, err := findAndLoadNote(storage, noteID)
@@ -69,7 +75,7 @@ By default, shows both metadata and content.`,
 	return cmd
 }
 
-func findAndLoadNote(storage *local.Storage, noteID string) (*types.Note, error) {
+func findAndLoadNote(storage types.StorageBackend, noteID string) (*types.Note, error) {
 	// For now, this is simplified - return a placeholder
 	fmt.Printf("Show note not yet implemented - would show note ID: %s\n", noteID)
 	return &types.Note{

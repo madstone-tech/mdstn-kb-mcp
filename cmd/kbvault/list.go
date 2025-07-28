@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage/local"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 )
 
@@ -28,17 +28,23 @@ func newListCmd() *cobra.Command {
 		Long: `List all notes in the vault with their metadata.
 Supports filtering by tags and various sorting options.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load configuration
-			config, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load configuration: %w", err)
+			// Get profile-aware configuration
+			config := getConfig()
+			if config == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
-			// Initialize storage
-			storage, err := local.New(config.Storage.Local)
+			// Initialize storage backend
+			storage, err := storage.CreateStorage(config.Storage)
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
+			defer func() {
+				if err := storage.Close(); err != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", err)
+				}
+			}()
 
 			// List all notes
 			notes, err := listAllNotes(storage)
@@ -81,7 +87,7 @@ Supports filtering by tags and various sorting options.`,
 	return cmd
 }
 
-func listAllNotes(storage *local.Storage) ([]*types.Note, error) {
+func listAllNotes(storage types.StorageBackend) ([]*types.Note, error) {
 	// For now, this is simplified - in a full implementation we'd properly parse
 	// markdown files and extract frontmatter
 	fmt.Println("Note listing not yet implemented - this is a placeholder")

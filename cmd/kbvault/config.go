@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 )
 
@@ -40,10 +40,10 @@ func newConfigShowCmd() *cobra.Command {
 If a key is specified, shows only that configuration value.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load configuration
-			cfg, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load configuration: %w", err)
+			// Get profile-aware configuration
+			cfg := getConfig()
+			if cfg == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
 			// Show specific key or all config
@@ -72,10 +72,10 @@ Supports nested keys using dot notation (e.g., server.http.port).`,
 			key := args[0]
 			value := args[1]
 
-			// Load configuration
-			cfg, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load configuration: %w", err)
+			// Get profile-aware configuration
+			cfg := getConfig()
+			if cfg == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
 			// Set the value
@@ -83,17 +83,12 @@ Supports nested keys using dot notation (e.g., server.http.port).`,
 				return fmt.Errorf("failed to set config value: %w", err)
 			}
 
-			// Save configuration
-			vaultRoot, err := findVaultRoot()
-			if err != nil {
-				return fmt.Errorf("not in a kbvault directory: %w", err)
-			}
-
-			manager := config.NewManager()
-			configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
-
-			if err := manager.SaveToFile(cfg, configPath); err != nil {
-				return fmt.Errorf("failed to save configuration: %w", err)
+			// Save configuration to profile
+			profileManager := getProfileManager()
+			currentProfile := getProfile()
+			
+			if err := profileManager.UpdateProfile(currentProfile, cfg); err != nil {
+				return fmt.Errorf("failed to save configuration to profile '%s': %w", currentProfile, err)
 			}
 
 			fmt.Printf("✅ Set %s = %s\n", key, value)
@@ -110,10 +105,10 @@ func newConfigValidateCmd() *cobra.Command {
 		Short: "Validate configuration",
 		Long:  `Validate the current configuration for correctness and completeness.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load configuration
-			cfg, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load configuration: %w", err)
+			// Get profile-aware configuration
+			cfg := getConfig()
+			if cfg == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
 			// Validate configuration
@@ -136,13 +131,16 @@ func newConfigPathCmd() *cobra.Command {
 		Short: "Show configuration file path",
 		Long:  `Show the path to the current configuration file.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			vaultRoot, err := findVaultRoot()
+			// Show profile configuration path
+			currentProfile := getProfile()
+			
+			// Construct profile path (same pattern as viper manager)
+			homeDir, err := os.UserHomeDir()
 			if err != nil {
-				return fmt.Errorf("not in a kbvault directory: %w", err)
+				return fmt.Errorf("failed to get user home directory: %w", err)
 			}
-
-			configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
-			fmt.Println(configPath)
+			configPath := filepath.Join(homeDir, ".kbvault", "profiles", currentProfile+".toml")
+			fmt.Printf("Profile: %s\nConfiguration file: %s\n", currentProfile, configPath)
 			return nil
 		},
 	}
@@ -254,6 +252,26 @@ func showConfigKey(config *types.Config, key string) error {
 			fmt.Printf("type: %s\n", config.Storage.Type)
 		} else if parts[1] == "type" {
 			fmt.Println(config.Storage.Type)
+		} else if len(parts) >= 3 && parts[1] == "local" {
+			switch parts[2] {
+			case "path":
+				fmt.Println(config.Storage.Local.Path)
+			case "lock_timeout":
+				fmt.Println(config.Storage.Local.LockTimeout)
+			default:
+				return fmt.Errorf("unknown storage.local key: %s", parts[2])
+			}
+		} else if len(parts) >= 3 && parts[1] == "s3" {
+			switch parts[2] {
+			case "bucket":
+				fmt.Println(config.Storage.S3.Bucket)
+			case "region":
+				fmt.Println(config.Storage.S3.Region)
+			case "endpoint":
+				fmt.Println(config.Storage.S3.Endpoint)
+			default:
+				return fmt.Errorf("unknown storage.s3 key: %s", parts[2])
+			}
 		} else {
 			return fmt.Errorf("unknown storage key: %s", parts[1])
 		}
