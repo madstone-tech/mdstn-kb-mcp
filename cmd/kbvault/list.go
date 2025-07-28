@@ -39,7 +39,12 @@ Supports filtering by tags and various sorting options.`,
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
-			defer storage.Close()
+			defer func() {
+				if err := storage.Close(); err != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", err)
+				}
+			}()
 
 			// List all notes
 			notes, err := listAllNotes(storage)

@@ -43,7 +43,12 @@ By default, shows both metadata and content.`,
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
-			defer storage.Close()
+			defer func() {
+				if err := storage.Close(); err != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", err)
+				}
+			}()
 
 			// Find and load note
 			note, err := findAndLoadNote(storage, noteID)

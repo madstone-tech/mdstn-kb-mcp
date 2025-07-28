@@ -82,7 +82,7 @@ func (s *Storage) Read(ctx context.Context, path string) ([]byte, error) {
 	if err != nil {
 		return nil, s.handleError("read", path, err)
 	}
-	defer result.Body.Close()
+	defer func() { _ = result.Body.Close() }()
 
 	data, err := io.ReadAll(result.Body)
 	if err != nil {
@@ -361,12 +361,8 @@ func (s *Storage) buildKey(path string) string {
 
 // handleError converts AWS S3 errors to storage errors
 func (s *Storage) handleError(operation, path string, err error) error {
-	retryable := false
-
 	// Check for retryable errors
-	if isRetryableS3Error(err) {
-		retryable = true
-	}
+	retryable := isRetryableS3Error(err)
 
 	return types.NewStorageError(types.StorageTypeS3, operation, path, err, retryable)
 }
@@ -429,6 +425,8 @@ func createAWSConfig(cfg types.S3StorageConfig) (aws.Config, error) {
 
 	// Set custom endpoint if provided
 	if cfg.Endpoint != "" {
+		// Note: Custom endpoint handling - using deprecated API for compatibility
+		// TODO: Migrate to service-specific endpoint resolution in future version
 		opts = append(opts, config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
 			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 				return aws.Endpoint{

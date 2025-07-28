@@ -113,13 +113,13 @@ func validateLocalConfig(config types.LocalVectorConfig) error {
 
 func validatePineconeConfig(config types.PineconeConfig) error {
 	if config.APIKey == "" {
-		return fmt.Errorf("Pinecone API key cannot be empty")
+		return fmt.Errorf("pinecone API key cannot be empty")
 	}
 	if config.Environment == "" {
-		return fmt.Errorf("Pinecone environment cannot be empty")
+		return fmt.Errorf("pinecone environment cannot be empty")
 	}
 	if config.IndexName == "" {
-		return fmt.Errorf("Pinecone index name cannot be empty")
+		return fmt.Errorf("pinecone index name cannot be empty")
 	}
 	return nil
 }

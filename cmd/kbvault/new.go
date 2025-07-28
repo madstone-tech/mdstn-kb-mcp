@@ -50,7 +50,12 @@ The note will be created in the vault's notes directory.`,
 			if err != nil {
 				return fmt.Errorf("failed to create storage backend: %w", err)
 			}
-			defer storageBackend.Close()
+			defer func() {
+				if err := storageBackend.Close(); err != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", err)
+				}
+			}()
 
 			// Create new note
 			note, err := createNewNote(config, title, template, tags)

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
@@ -74,7 +73,7 @@ func TestProfileCreateCmd(t *testing.T) {
 
 	cmd := newProfileCreateCmd()
 	assert.NotNil(t, cmd)
-	assert.Equal(t, "create", cmd.Use)
+	assert.Equal(t, "create <profile-name>", cmd.Use)
 
 	// Test basic profile creation
 	var buf bytes.Buffer
@@ -136,8 +135,8 @@ func TestProfileCreateCmd_WithFlags(t *testing.T) {
 func TestProfileCreateCmd_InvalidArgs(t *testing.T) {
 	cmd := newProfileCreateCmd()
 	
-	// Test with no arguments
-	err := cmd.RunE(cmd, []string{})
+	// Test with no arguments - should validate args first
+	err := cmd.Args(cmd, []string{})
 	assert.Error(t, err)
 }
 
@@ -202,6 +201,13 @@ func TestProfileDeleteCmd_DefaultProfile(t *testing.T) {
 
 	cmd := newProfileDeleteCmd()
 	
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	
+	// Mock stdin to respond "y" to confirmation so we get the actual delete error
+	stdin := strings.NewReader("y\n")
+	cmd.SetIn(stdin)
+	
 	err := cmd.RunE(cmd, []string{"default"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot delete the default profile")
@@ -229,8 +235,10 @@ func TestProfileSwitchCmd(t *testing.T) {
 	output := buf.String()
 	assert.Contains(t, output, "Switched to profile 'switch-to-me'")
 	
-	// Verify the switch worked
-	assert.Equal(t, "switch-to-me", pm.GetActiveProfile())
+	// Verify the switch worked by creating a new ProfileManager instance
+	pm2, err := config.NewProfileManager()
+	require.NoError(t, err)
+	assert.Equal(t, "switch-to-me", pm2.GetActiveProfile())
 }
 
 func TestProfileShowCmd(t *testing.T) {
@@ -385,37 +393,15 @@ func TestPrintFunctions(t *testing.T) {
 
 	// Test table output
 	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := printProfilesTable(profiles)
+	err := printProfilesTable(&buf, profiles)
 	assert.NoError(t, err)
-
-	w.Close()
-	os.Stdout = oldStdout
 
 	// Test JSON output
 	buf.Reset()
-	err = printProfilesJSON(profiles)
+	err = printProfilesJSON(&buf, profiles)
 	assert.NoError(t, err)
 }
 
-// Helper function to capture stdout
-func captureOutput(f func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	f()
-
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	buf.ReadFrom(r)
-	return buf.String()
-}
 
 // Integration test for the complete profile workflow
 func TestProfileWorkflow(t *testing.T) {

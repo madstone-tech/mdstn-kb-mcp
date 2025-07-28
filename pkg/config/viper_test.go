@@ -22,7 +22,7 @@ func TestNewViperManager(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	defer func() {
 		if originalHome != "" {
-			os.Setenv("HOME", originalHome)
+			_ = os.Setenv("HOME", originalHome)
 		}
 	}()
 

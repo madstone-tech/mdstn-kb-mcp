@@ -402,7 +402,7 @@ func TestStorageIntegration(t *testing.T) {
 	
 	storage, err := NewStorage(config)
 	require.NoError(t, err)
-	defer storage.Close()
+	defer func() { _ = storage.Close() }()
 	
 	ctx := context.Background()
 	
@@ -483,7 +483,7 @@ func TestStorageStreamOperations(t *testing.T) {
 	
 	storage, err := NewStorage(config)
 	require.NoError(t, err)
-	defer storage.Close()
+	defer func() { _ = storage.Close() }()
 	
 	ctx := context.Background()
 	
@@ -498,7 +498,7 @@ func TestStorageStreamOperations(t *testing.T) {
 	// Test read stream
 	readCloser, err := storage.ReadStream(ctx, testPath)
 	assert.NoError(t, err)
-	defer readCloser.Close()
+	defer func() { _ = readCloser.Close() }()
 	
 	data := make([]byte, len(testData))
 	n, err := readCloser.Read(data)

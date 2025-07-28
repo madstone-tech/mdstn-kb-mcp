@@ -1,9 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 	"text/tabwriter"
 
@@ -65,9 +66,9 @@ func newProfileListCmd() *cobra.Command {
 
 			switch outputFormat {
 			case "json":
-				return printProfilesJSON(profiles)
+				return printProfilesJSON(cmd.OutOrStdout(), profiles)
 			default:
-				return printProfilesTable(profiles)
+				return printProfilesTable(cmd.OutOrStdout(), profiles)
 			}
 		},
 	}
@@ -105,17 +106,17 @@ Examples:
 				return fmt.Errorf("failed to create profile: %w", err)
 			}
 
-			fmt.Printf("Profile '%s' created successfully.\n", profileName)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile '%s' created successfully.\n", profileName)
 			
 			// Ask if user wants to switch to the new profile
-			fmt.Printf("Switch to profile '%s'? (y/N): ", profileName)
-			var response string
-			fmt.Scanln(&response)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Switch to profile '%s'? (y/N): ", profileName)
+			reader := bufio.NewReader(cmd.InOrStdin())
+			response, _ := reader.ReadString('\n')
 			if strings.ToLower(strings.TrimSpace(response)) == "y" {
 				if err := pm.SwitchProfile(profileName); err != nil {
 					return fmt.Errorf("failed to switch to profile: %w", err)
 				}
-				fmt.Printf("Switched to profile '%s'.\n", profileName)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Switched to profile '%s'.\n", profileName)
 			}
 
 			return nil
@@ -158,11 +159,11 @@ func newProfileDeleteCmd() *cobra.Command {
 
 			// Confirm deletion unless --force is used
 			if !force {
-				fmt.Printf("Are you sure you want to delete profile '%s'? (y/N): ", profileName)
-				var response string
-				fmt.Scanln(&response)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Are you sure you want to delete profile '%s'? (y/N): ", profileName)
+				reader := bufio.NewReader(cmd.InOrStdin())
+				response, _ := reader.ReadString('\n')
 				if strings.ToLower(strings.TrimSpace(response)) != "y" {
-					fmt.Println("Profile deletion cancelled.")
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Profile deletion cancelled.")
 					return nil
 				}
 			}
@@ -171,7 +172,7 @@ func newProfileDeleteCmd() *cobra.Command {
 				return fmt.Errorf("failed to delete profile: %w", err)
 			}
 
-			fmt.Printf("Profile '%s' deleted successfully.\n", profileName)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile '%s' deleted successfully.\n", profileName)
 			return nil
 		},
 	}
@@ -199,7 +200,7 @@ func newProfileSwitchCmd() *cobra.Command {
 				return fmt.Errorf("failed to switch profile: %w", err)
 			}
 
-			fmt.Printf("Switched to profile '%s'.\n", profileName)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Switched to profile '%s'.\n", profileName)
 			return nil
 		},
 	}
@@ -235,9 +236,9 @@ func newProfileShowCmd() *cobra.Command {
 
 			switch outputFormat {
 			case "json":
-				return printConfigJSON(config)
+				return printConfigJSON(cmd.OutOrStdout(), config)
 			default:
-				return printConfigTable(profileName, config)
+				return printConfigTable(cmd.OutOrStdout(), profileName, config)
 			}
 		},
 	}
@@ -266,7 +267,7 @@ func newProfileCopyCmd() *cobra.Command {
 				return fmt.Errorf("failed to copy profile: %w", err)
 			}
 
-			fmt.Printf("Profile '%s' copied to '%s' successfully.\n", sourceProfile, targetProfile)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile '%s' copied to '%s' successfully.\n", sourceProfile, targetProfile)
 			return nil
 		},
 	}
@@ -300,7 +301,7 @@ Examples:
 				return fmt.Errorf("failed to set configuration value: %w", err)
 			}
 
-			fmt.Printf("Set %s.%s = %s\n", profileName, key, value)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Set %s.%s = %s\n", profileName, key, value)
 			return nil
 		},
 	}
@@ -333,7 +334,7 @@ Examples:
 				return fmt.Errorf("failed to get configuration value: %w", err)
 			}
 
-			fmt.Printf("%s\n", value)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", value)
 			return nil
 		},
 	}
@@ -364,11 +365,11 @@ func (s *storageTypeValue) Type() string {
 
 // Helper functions for output formatting
 
-func printProfilesTable(profiles []config.ProfileInfo) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+func printProfilesTable(out io.Writer, profiles []config.ProfileInfo) error {
+	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+	defer func() { _ = w.Flush() }()
 
-	fmt.Fprintln(w, "NAME\tACTIVE\tSTORAGE\tDEFAULT")
+	_, _ = fmt.Fprintln(w, "NAME\tACTIVE\tSTORAGE\tDEFAULT")
 	for _, profile := range profiles {
 		active := ""
 		if profile.IsActive {
@@ -380,58 +381,58 @@ func printProfilesTable(profiles []config.ProfileInfo) error {
 			defaultFlag = "default"
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", 
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", 
 			profile.Name, active, profile.StorageType, defaultFlag)
 	}
 
 	return nil
 }
 
-func printProfilesJSON(profiles []config.ProfileInfo) error {
-	encoder := json.NewEncoder(os.Stdout)
+func printProfilesJSON(out io.Writer, profiles []config.ProfileInfo) error {
+	encoder := json.NewEncoder(out)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(profiles)
 }
 
-func printConfigTable(profileName string, config *types.Config) error {
-	fmt.Printf("Profile: %s\n\n", profileName)
+func printConfigTable(out io.Writer, profileName string, config *types.Config) error {
+	_, _ = fmt.Fprintf(out, "Profile: %s\n\n", profileName)
 	
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+	defer func() { _ = w.Flush() }()
 
-	fmt.Fprintln(w, "SECTION\tKEY\tVALUE")
+	_, _ = fmt.Fprintln(w, "SECTION\tKEY\tVALUE")
 	
 	// Vault configuration
-	fmt.Fprintf(w, "vault\tname\t%s\n", config.Vault.Name)
-	fmt.Fprintf(w, "vault\tnotes_dir\t%s\n", config.Vault.NotesDir)
-	fmt.Fprintf(w, "vault\tdaily_dir\t%s\n", config.Vault.DailyDir)
-	fmt.Fprintf(w, "vault\ttemplates_dir\t%s\n", config.Vault.TemplatesDir)
+	_, _ = fmt.Fprintf(w, "vault\tname\t%s\n", config.Vault.Name)
+	_, _ = fmt.Fprintf(w, "vault\tnotes_dir\t%s\n", config.Vault.NotesDir)
+	_, _ = fmt.Fprintf(w, "vault\tdaily_dir\t%s\n", config.Vault.DailyDir)
+	_, _ = fmt.Fprintf(w, "vault\ttemplates_dir\t%s\n", config.Vault.TemplatesDir)
 	
 	// Storage configuration
-	fmt.Fprintf(w, "storage\ttype\t%s\n", config.Storage.Type)
+	_, _ = fmt.Fprintf(w, "storage\ttype\t%s\n", config.Storage.Type)
 	
 	switch config.Storage.Type {
 	case types.StorageTypeLocal:
-		fmt.Fprintf(w, "storage.local\tpath\t%s\n", config.Storage.Local.Path)
-		fmt.Fprintf(w, "storage.local\tcreate_dirs\t%t\n", config.Storage.Local.CreateDirs)
+		_, _ = fmt.Fprintf(w, "storage.local\tpath\t%s\n", config.Storage.Local.Path)
+		_, _ = fmt.Fprintf(w, "storage.local\tcreate_dirs\t%t\n", config.Storage.Local.CreateDirs)
 	case types.StorageTypeS3:
-		fmt.Fprintf(w, "storage.s3\tbucket\t%s\n", config.Storage.S3.Bucket)
-		fmt.Fprintf(w, "storage.s3\tregion\t%s\n", config.Storage.S3.Region)
+		_, _ = fmt.Fprintf(w, "storage.s3\tbucket\t%s\n", config.Storage.S3.Bucket)
+		_, _ = fmt.Fprintf(w, "storage.s3\tregion\t%s\n", config.Storage.S3.Region)
 		if config.Storage.S3.Endpoint != "" {
-			fmt.Fprintf(w, "storage.s3\tendpoint\t%s\n", config.Storage.S3.Endpoint)
+			_, _ = fmt.Fprintf(w, "storage.s3\tendpoint\t%s\n", config.Storage.S3.Endpoint)
 		}
 	}
 	
 	// Server configuration
-	fmt.Fprintf(w, "server.http\tenabled\t%t\n", config.Server.HTTP.Enabled)
-	fmt.Fprintf(w, "server.http\thost\t%s\n", config.Server.HTTP.Host)
-	fmt.Fprintf(w, "server.http\tport\t%d\n", config.Server.HTTP.Port)
+	_, _ = fmt.Fprintf(w, "server.http\tenabled\t%t\n", config.Server.HTTP.Enabled)
+	_, _ = fmt.Fprintf(w, "server.http\thost\t%s\n", config.Server.HTTP.Host)
+	_, _ = fmt.Fprintf(w, "server.http\tport\t%d\n", config.Server.HTTP.Port)
 
 	return nil
 }
 
-func printConfigJSON(config *types.Config) error {
-	encoder := json.NewEncoder(os.Stdout)
+func printConfigJSON(out io.Writer, config *types.Config) error {
+	encoder := json.NewEncoder(out)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(config)
 }
