@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
@@ -88,6 +89,13 @@ Examples:
 func initializeConfig() error {
 	var err error
 	
+	// First, check for local vault configuration (backward compatibility)
+	if localConfig := tryLoadLocalConfig(); localConfig != nil {
+		currentConfig = localConfig
+		currentProfile = "local"
+		return nil
+	}
+	
 	// Initialize profile manager
 	profileManager, err = config.NewProfileManager()
 	if err != nil {
@@ -128,6 +136,28 @@ func initializeConfig() error {
 	currentProfile = profile
 	return nil
 }
+
+// tryLoadLocalConfig attempts to load configuration from a local .kbvault directory
+// This provides backward compatibility with the old configuration system
+func tryLoadLocalConfig() *types.Config {
+	// Look for local vault configuration
+	vaultRoot, err := findVaultRoot()
+	if err != nil {
+		return nil
+	}
+	
+	configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
+	
+	// Use config manager to load the configuration
+	manager := config.NewManager()
+	cfg, err := manager.LoadFromFile(configPath)
+	if err != nil {
+		return nil
+	}
+	
+	return cfg
+}
+
 
 // getConfig returns the current configuration
 func getConfig() *types.Config {
