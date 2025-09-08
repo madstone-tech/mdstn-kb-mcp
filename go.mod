@@ -1,6 +1,6 @@
 module github.com/madstone-tech/mdstn-kb-mcp
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.4
 
@@ -9,7 +9,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/sys v0.34.0
+	golang.org/x/sys v0.36.0
 )
 
 require (
