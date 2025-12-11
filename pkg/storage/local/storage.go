@@ -78,7 +78,7 @@ func (s *Storage) Read(ctx context.Context, path string) ([]byte, error) {
 	}
 
 	fullPath := s.getFullPath(path)
-	
+
 	if s.config.EnableLocking {
 		unlock, err := s.lockFile(ctx, fullPath, unix.LOCK_SH)
 		if err != nil {
@@ -105,7 +105,7 @@ func (s *Storage) Write(ctx context.Context, path string, data []byte) error {
 	}
 
 	fullPath := s.getFullPath(path)
-	
+
 	// Ensure directory exists
 	if s.config.CreateDirs {
 		if err := s.ensureDir(filepath.Dir(fullPath)); err != nil {
@@ -115,7 +115,7 @@ func (s *Storage) Write(ctx context.Context, path string, data []byte) error {
 
 	// Use atomic write with temp file
 	tempPath := fullPath + ".tmp." + strconv.FormatInt(time.Now().UnixNano(), 10)
-	
+
 	if s.config.EnableLocking {
 		unlock, err := s.lockFile(ctx, fullPath, unix.LOCK_EX)
 		if err != nil {
@@ -150,7 +150,7 @@ func (s *Storage) Delete(ctx context.Context, path string) error {
 	}
 
 	fullPath := s.getFullPath(path)
-	
+
 	if s.config.EnableLocking {
 		unlock, err := s.lockFile(ctx, fullPath, unix.LOCK_EX)
 		if err != nil {
@@ -178,15 +178,15 @@ func (s *Storage) Exists(ctx context.Context, path string) (bool, error) {
 
 	fullPath := s.getFullPath(path)
 	_, err := os.Stat(fullPath)
-	
+
 	if err == nil {
 		return true, nil
 	}
-	
+
 	if os.IsNotExist(err) {
 		return false, nil
 	}
-	
+
 	return false, types.NewStorageError(s.Type(), "exists", path, err, true)
 }
 
@@ -198,11 +198,11 @@ func (s *Storage) List(ctx context.Context, prefix string) ([]string, error) {
 
 	// For prefix like "list/", we want to list all files in that directory
 	prefixPath := s.getFullPath(prefix)
-	
+
 	// If prefix ends with "/", treat it as a directory
 	var searchDir string
 	var namePrefix string
-	
+
 	if strings.HasSuffix(prefix, "/") {
 		searchDir = prefixPath
 		namePrefix = ""
@@ -224,7 +224,7 @@ func (s *Storage) List(ctx context.Context, prefix string) ([]string, error) {
 		if entry.IsDir() {
 			continue
 		}
-		
+
 		if namePrefix == "" || strings.HasPrefix(entry.Name(), namePrefix) {
 			// Return relative path from storage root
 			relPath, err := filepath.Rel(s.config.Path, filepath.Join(searchDir, entry.Name()))
@@ -246,7 +246,7 @@ func (s *Storage) Stat(ctx context.Context, path string) (*types.FileInfo, error
 
 	fullPath := s.getFullPath(path)
 	stat, err := os.Stat(fullPath)
-	
+
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, types.NewStorageError(s.Type(), "stat", path, err, false)
@@ -271,7 +271,7 @@ func (s *Storage) ReadStream(ctx context.Context, path string) (io.ReadCloser, e
 	}
 
 	fullPath := s.getFullPath(path)
-	
+
 	file, err := os.Open(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -292,7 +292,7 @@ func (s *Storage) WriteStream(ctx context.Context, path string, reader io.Reader
 	}
 
 	fullPath := s.getFullPath(path)
-	
+
 	// Ensure directory exists
 	if s.config.CreateDirs {
 		if err := s.ensureDir(filepath.Dir(fullPath)); err != nil {
@@ -302,7 +302,7 @@ func (s *Storage) WriteStream(ctx context.Context, path string, reader io.Reader
 
 	// Use atomic write with temp file
 	tempPath := fullPath + ".tmp." + strconv.FormatInt(time.Now().UnixNano(), 10)
-	
+
 	if s.config.EnableLocking {
 		unlock, err := s.lockFile(ctx, fullPath, unix.LOCK_EX)
 		if err != nil {
@@ -325,7 +325,7 @@ func (s *Storage) WriteStream(ctx context.Context, path string, reader io.Reader
 	// Copy data from reader to temp file
 	_, err = io.Copy(tempFile, reader)
 	_ = tempFile.Close() // Close temp file (ignore close error)
-	
+
 	if err != nil {
 		_ = os.Remove(tempPath) // Clean up on error (ignore removal error)
 		return types.NewStorageError(s.Type(), "write_stream", path, err, true)
@@ -368,7 +368,7 @@ func (s *Storage) Move(ctx context.Context, src, dst string) error {
 
 	srcPath := s.getFullPath(src)
 	dstPath := s.getFullPath(dst)
-	
+
 	// Ensure destination directory exists
 	if s.config.CreateDirs {
 		if err := s.ensureDir(filepath.Dir(dstPath)); err != nil {
@@ -421,7 +421,7 @@ func (s *Storage) Health(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("storage not writable: %w", err)
 	}
-	_ = file.Close()   // Ignore close error for temp file
+	_ = file.Close()        // Ignore close error for temp file
 	_ = os.Remove(tempPath) // Ignore removal error for temp file
 
 	return nil
@@ -431,18 +431,18 @@ func (s *Storage) Health(ctx context.Context) error {
 func (s *Storage) Close() error {
 	s.closeMux.Lock()
 	defer s.closeMux.Unlock()
-	
+
 	if s.closed {
 		return nil
 	}
-	
+
 	s.closed = true
-	
+
 	// Clear lock map
 	s.lockMutex.Lock()
 	s.locks = make(map[string]*sync.Mutex)
 	s.lockMutex.Unlock()
-	
+
 	return nil
 }
 
@@ -451,7 +451,7 @@ func (s *Storage) Close() error {
 func (s *Storage) checkClosed() error {
 	s.closeMux.RLock()
 	defer s.closeMux.RUnlock()
-	
+
 	if s.closed {
 		return fmt.Errorf("storage is closed")
 	}
@@ -461,10 +461,10 @@ func (s *Storage) checkClosed() error {
 func (s *Storage) getFullPath(path string) string {
 	// Clean the path to prevent directory traversal
 	cleanPath := filepath.Clean(path)
-	
+
 	// Remove leading slash if present
 	cleanPath = strings.TrimPrefix(cleanPath, "/")
-	
+
 	// Ensure the path is relative and doesn't escape
 	if strings.Contains(cleanPath, "..") {
 		// Further sanitize by removing any remaining ".." components
@@ -477,7 +477,7 @@ func (s *Storage) getFullPath(path string) string {
 		}
 		cleanPath = strings.Join(sanitized, string(filepath.Separator))
 	}
-	
+
 	return filepath.Join(s.config.Path, cleanPath)
 }
 
@@ -486,7 +486,7 @@ func (s *Storage) ensureDir(dir string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return os.MkdirAll(dir, dirPerms)
 }
 
@@ -534,7 +534,7 @@ func (s *Storage) lockFile(ctx context.Context, path string, lockType int) (func
 		} else {
 			flags = os.O_RDONLY | os.O_CREATE // Write lock - create if needed
 		}
-		
+
 		file, err := os.OpenFile(path, flags, 0644)
 		if err != nil {
 			mutex.Unlock()
@@ -554,14 +554,14 @@ func (s *Storage) lockFile(ctx context.Context, path string, lockType int) (func
 				mutex.Unlock()
 				return nil, fmt.Errorf("failed to acquire file lock: %w", err)
 			}
-			
+
 			// Return unlock function
 			return func() {
 				_ = unix.Flock(int(file.Fd()), unix.LOCK_UN) // Ignore unlock error
-				_ = file.Close() // Ignore close error in cleanup
+				_ = file.Close()                             // Ignore close error in cleanup
 				mutex.Unlock()
 			}, nil
-			
+
 		case <-time.After(timeout):
 			_ = file.Close() // Ignore close error on timeout
 			mutex.Unlock()
@@ -570,7 +570,7 @@ func (s *Storage) lockFile(ctx context.Context, path string, lockType int) (func
 
 	case <-time.After(timeout):
 		return nil, fmt.Errorf("timeout acquiring mutex lock after %v", timeout)
-		
+
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}

@@ -161,11 +161,10 @@ func openInEditor(filePath string) error {
 	return cmd.Run()
 }
 
-
 func saveNote(ctx context.Context, storage types.StorageBackend, note *types.Note) error {
 	// Format note content with frontmatter
 	var buf bytes.Buffer
-	
+
 	// Write frontmatter
 	buf.WriteString("---\n")
 	buf.WriteString(fmt.Sprintf("id: %s\n", note.ID))
@@ -181,10 +180,10 @@ func saveNote(ctx context.Context, storage types.StorageBackend, note *types.Not
 	buf.WriteString(fmt.Sprintf("created: %s\n", note.Frontmatter.Created))
 	buf.WriteString(fmt.Sprintf("updated: %s\n", note.Frontmatter.Updated))
 	buf.WriteString("---\n\n")
-	
+
 	// Write content
 	buf.WriteString(note.Content)
-	
+
 	// Save to storage
 	return storage.Write(ctx, note.FilePath, buf.Bytes())
 }

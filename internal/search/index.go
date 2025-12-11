@@ -11,13 +11,13 @@ import (
 // Index provides an in-memory inverted index for fast text search
 type Index struct {
 	mu sync.RWMutex
-	
+
 	// Inverted index: term -> field -> document IDs
 	terms map[string]map[string]map[string]bool
-	
+
 	// Document store: ID -> document
 	documents map[string]*IndexedDocument
-	
+
 	// Metadata indices
 	tagIndex  map[string]map[string]bool // tag -> document IDs
 	typeIndex map[string]map[string]bool // type -> document IDs
@@ -50,30 +50,30 @@ func NewIndex() *Index {
 func (idx *Index) Add(doc *IndexedDocument) {
 	idx.mu.Lock()
 	defer idx.mu.Unlock()
-	
+
 	// Remove old version if exists
 	idx.removeUnsafe(doc.ID)
-	
+
 	// Store document
 	idx.documents[doc.ID] = doc
-	
+
 	// Index title
 	idx.indexField(doc.ID, "title", doc.Title)
-	
+
 	// Index content
 	idx.indexField(doc.ID, "content", doc.Content)
-	
+
 	// Index tags
 	for _, tag := range doc.Tags {
 		idx.indexField(doc.ID, "tags", tag)
-		
+
 		// Add to tag index
 		if idx.tagIndex[tag] == nil {
 			idx.tagIndex[tag] = make(map[string]bool)
 		}
 		idx.tagIndex[tag][doc.ID] = true
 	}
-	
+
 	// Index type
 	if doc.Type != "" {
 		if idx.typeIndex[doc.Type] == nil {
@@ -87,7 +87,7 @@ func (idx *Index) Add(doc *IndexedDocument) {
 func (idx *Index) Remove(docID string) {
 	idx.mu.Lock()
 	defer idx.mu.Unlock()
-	
+
 	idx.removeUnsafe(docID)
 }
 
@@ -97,23 +97,23 @@ func (idx *Index) removeUnsafe(docID string) {
 	if !exists {
 		return
 	}
-	
+
 	// Remove from term index
 	for term, fields := range idx.terms {
 		for field, docs := range fields {
 			delete(docs, docID)
-			
+
 			// Clean up empty maps
 			if len(docs) == 0 {
 				delete(fields, field)
 			}
 		}
-		
+
 		if len(fields) == 0 {
 			delete(idx.terms, term)
 		}
 	}
-	
+
 	// Remove from tag index
 	for _, tag := range doc.Tags {
 		delete(idx.tagIndex[tag], docID)
@@ -121,7 +121,7 @@ func (idx *Index) removeUnsafe(docID string) {
 			delete(idx.tagIndex, tag)
 		}
 	}
-	
+
 	// Remove from type index
 	if doc.Type != "" {
 		delete(idx.typeIndex[doc.Type], docID)
@@ -129,7 +129,7 @@ func (idx *Index) removeUnsafe(docID string) {
 			delete(idx.typeIndex, doc.Type)
 		}
 	}
-	
+
 	// Remove document
 	delete(idx.documents, docID)
 }
@@ -138,11 +138,11 @@ func (idx *Index) removeUnsafe(docID string) {
 func (idx *Index) Search(term string, field string) []*IndexedDocument {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
-	
+
 	term = strings.ToLower(term)
-	
+
 	var results []*IndexedDocument
-	
+
 	if fields, ok := idx.terms[term]; ok {
 		if docIDs, ok := fields[field]; ok {
 			for docID := range docIDs {
@@ -152,7 +152,7 @@ func (idx *Index) Search(term string, field string) []*IndexedDocument {
 			}
 		}
 	}
-	
+
 	return results
 }
 
@@ -160,9 +160,9 @@ func (idx *Index) Search(term string, field string) []*IndexedDocument {
 func (idx *Index) SearchByTag(tag string) []*IndexedDocument {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
-	
+
 	var results []*IndexedDocument
-	
+
 	if docIDs, ok := idx.tagIndex[tag]; ok {
 		for docID := range docIDs {
 			if doc, exists := idx.documents[docID]; exists {
@@ -170,7 +170,7 @@ func (idx *Index) SearchByTag(tag string) []*IndexedDocument {
 			}
 		}
 	}
-	
+
 	return results
 }
 
@@ -178,9 +178,9 @@ func (idx *Index) SearchByTag(tag string) []*IndexedDocument {
 func (idx *Index) SearchByType(docType string) []*IndexedDocument {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
-	
+
 	var results []*IndexedDocument
-	
+
 	if docIDs, ok := idx.typeIndex[docType]; ok {
 		for docID := range docIDs {
 			if doc, exists := idx.documents[docID]; exists {
@@ -188,7 +188,7 @@ func (idx *Index) SearchByType(docType string) []*IndexedDocument {
 			}
 		}
 	}
-	
+
 	return results
 }
 
@@ -196,7 +196,7 @@ func (idx *Index) SearchByType(docType string) []*IndexedDocument {
 func (idx *Index) GetDocument(docID string) (*IndexedDocument, bool) {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
-	
+
 	doc, exists := idx.documents[docID]
 	return doc, exists
 }
@@ -205,12 +205,12 @@ func (idx *Index) GetDocument(docID string) (*IndexedDocument, bool) {
 func (idx *Index) GetAllDocuments() []*IndexedDocument {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
-	
+
 	results := make([]*IndexedDocument, 0, len(idx.documents))
 	for _, doc := range idx.documents {
 		results = append(results, doc)
 	}
-	
+
 	return results
 }
 
@@ -218,7 +218,7 @@ func (idx *Index) GetAllDocuments() []*IndexedDocument {
 func (idx *Index) Size() int {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
-	
+
 	return len(idx.documents)
 }
 
@@ -226,7 +226,7 @@ func (idx *Index) Size() int {
 func (idx *Index) Clear() {
 	idx.mu.Lock()
 	defer idx.mu.Unlock()
-	
+
 	idx.terms = make(map[string]map[string]map[string]bool)
 	idx.documents = make(map[string]*IndexedDocument)
 	idx.tagIndex = make(map[string]map[string]bool)
@@ -237,17 +237,17 @@ func (idx *Index) Clear() {
 func (idx *Index) indexField(docID, field, content string) {
 	// Tokenize content
 	tokens := idx.tokenize(content)
-	
+
 	// Index each token
 	for _, token := range tokens {
 		if idx.terms[token] == nil {
 			idx.terms[token] = make(map[string]map[string]bool)
 		}
-		
+
 		if idx.terms[token][field] == nil {
 			idx.terms[token][field] = make(map[string]bool)
 		}
-		
+
 		idx.terms[token][field][docID] = true
 	}
 }
@@ -255,11 +255,11 @@ func (idx *Index) indexField(docID, field, content string) {
 // tokenize splits text into indexable tokens
 func (idx *Index) tokenize(text string) []string {
 	text = strings.ToLower(text)
-	
+
 	// Simple tokenization - split on non-alphanumeric characters
 	var tokens []string
 	var current strings.Builder
-	
+
 	for _, r := range text {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
 			current.WriteRune(r)
@@ -270,11 +270,11 @@ func (idx *Index) tokenize(text string) []string {
 			}
 		}
 	}
-	
+
 	if current.Len() > 0 {
 		tokens = append(tokens, current.String())
 	}
-	
+
 	return tokens
 }
 

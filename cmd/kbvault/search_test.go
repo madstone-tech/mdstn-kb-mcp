@@ -18,17 +18,17 @@ func TestSearchCommand(t *testing.T) {
 	// TODO: Search functionality is not yet fully implemented
 	// Skip these tests temporarily to allow CI to pass while search is being developed
 	t.Skip("Search functionality is not yet fully implemented - tests will be enabled when search is complete")
-	
+
 	// Create temporary vault
 	tempDir := t.TempDir()
 	vaultPath := filepath.Join(tempDir, "vault")
-	
+
 	// Initialize vault
 	initCmd := newInitCmd()
 	initCmd.SetArgs([]string{vaultPath})
 	err := initCmd.Execute()
 	require.NoError(t, err)
-	
+
 	// Create test notes
 	testNotes := []struct {
 		filename string
@@ -71,34 +71,34 @@ Discussed project timeline and deliverables.
 Action items: review code, update documentation.`,
 		},
 	}
-	
+
 	// Create notes directory as expected by vault structure
 	notesDir := filepath.Join(vaultPath, "notes")
 	err = os.MkdirAll(notesDir, 0755)
 	require.NoError(t, err)
-	
+
 	// Write test notes
 	for _, note := range testNotes {
 		notePath := filepath.Join(notesDir, note.filename)
 		err := os.WriteFile(notePath, []byte(note.content), 0644)
 		require.NoError(t, err)
 	}
-	
+
 	// Change to vault directory for tests to work
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
 	defer func() { _ = os.Chdir(oldWd) }()
-	
+
 	err = os.Chdir(vaultPath)
 	require.NoError(t, err)
-	
+
 	tests := []struct {
-		name        string
-		args        []string
-		wantOutput  []string
-		dontWant    []string
-		wantErr     bool
-		checkJSON   bool
+		name       string
+		args       []string
+		wantOutput []string
+		dontWant   []string
+		wantErr    bool
+		checkJSON  bool
 	}{
 		{
 			name: "simple text search",
@@ -162,8 +162,8 @@ Action items: review code, update documentation.`,
 			},
 		},
 		{
-			name: "search with JSON output",
-			args: []string{"search", "golang", "--json"},
+			name:      "search with JSON output",
+			args:      []string{"search", "golang", "--json"},
 			checkJSON: true,
 		},
 		{
@@ -185,7 +185,7 @@ Action items: review code, update documentation.`,
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := newRootCmd()
@@ -193,16 +193,16 @@ Action items: review code, update documentation.`,
 			cmd.SetOut(&buf)
 			cmd.SetErr(&buf)
 			cmd.SetArgs(tt.args)
-			
+
 			err := cmd.Execute()
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			
+
 			output := buf.String()
-			
+
 			if tt.checkJSON {
 				// Verify valid JSON output
 				var result struct {
@@ -217,7 +217,7 @@ Action items: review code, update documentation.`,
 				for _, want := range tt.wantOutput {
 					assert.Contains(t, output, want)
 				}
-				
+
 				// Check unwanted output
 				for _, dontWant := range tt.dontWant {
 					assert.NotContains(t, output, dontWant)
@@ -231,21 +231,21 @@ func TestSearchCommand_DateRange(t *testing.T) {
 	// Create temporary vault
 	tempDir := t.TempDir()
 	vaultPath := filepath.Join(tempDir, "vault")
-	
+
 	// Initialize vault
 	initCmd := newInitCmd()
 	initCmd.SetArgs([]string{vaultPath})
 	err := initCmd.Execute()
 	require.NoError(t, err)
-	
+
 	// Change to vault directory for tests to work
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
 	defer func() { _ = os.Chdir(oldWd) }()
-	
+
 	err = os.Chdir(vaultPath)
 	require.NoError(t, err)
-	
+
 	tests := []struct {
 		name    string
 		args    []string
@@ -257,19 +257,19 @@ func TestSearchCommand_DateRange(t *testing.T) {
 			args: []string{"search", "--after", "2024-01-01", "--before", "2024-12-31"},
 		},
 		{
-			name: "invalid after date",
-			args: []string{"search", "--after", "invalid-date"},
+			name:    "invalid after date",
+			args:    []string{"search", "--after", "invalid-date"},
 			wantErr: true,
 			errMsg:  "invalid after date",
 		},
 		{
-			name: "invalid before date",
-			args: []string{"search", "--before", "2024-13-45"},
+			name:    "invalid before date",
+			args:    []string{"search", "--before", "2024-13-45"},
 			wantErr: true,
 			errMsg:  "invalid before date",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := newRootCmd()
@@ -277,7 +277,7 @@ func TestSearchCommand_DateRange(t *testing.T) {
 			cmd.SetOut(&buf)
 			cmd.SetErr(&buf)
 			cmd.SetArgs(tt.args)
-			
+
 			err := cmd.Execute()
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -293,22 +293,22 @@ func TestSearchCommand_Sorting(t *testing.T) {
 	// TODO: Search functionality is not yet fully implemented
 	// Skip these tests temporarily to allow CI to pass while search is being developed
 	t.Skip("Search functionality is not yet fully implemented - tests will be enabled when search is complete")
-	
+
 	// Create temporary vault
 	tempDir := t.TempDir()
 	vaultPath := filepath.Join(tempDir, "vault")
-	
+
 	// Initialize vault
 	initCmd := newInitCmd()
 	initCmd.SetArgs([]string{vaultPath})
 	err := initCmd.Execute()
 	require.NoError(t, err)
-	
+
 	// Create notes directory
 	notesDir := filepath.Join(vaultPath, "notes")
 	err = os.MkdirAll(notesDir, 0755)
 	require.NoError(t, err)
-	
+
 	// Create notes with different titles
 	notes := []struct {
 		filename string
@@ -318,38 +318,38 @@ func TestSearchCommand_Sorting(t *testing.T) {
 		{"beta.md", "# Beta Note\nContent about programming"},
 		{"gamma.md", "# Gamma Note\nContent about programming"},
 	}
-	
+
 	for _, note := range notes {
 		notePath := filepath.Join(notesDir, note.filename)
 		err := os.WriteFile(notePath, []byte(note.title), 0644)
 		require.NoError(t, err)
 	}
-	
+
 	// Change to vault directory for tests to work
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
 	defer func() { _ = os.Chdir(oldWd) }()
-	
+
 	err = os.Chdir(vaultPath)
 	require.NoError(t, err)
-	
+
 	// Test sorting by title
 	cmd := newRootCmd()
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"search", "programming", "--sort", "title"})
-	
+
 	err = cmd.Execute()
 	require.NoError(t, err)
-	
+
 	output := buf.String()
-	
+
 	// Check that results appear in alphabetical order
 	alphaPos := strings.Index(output, "Alpha")
 	betaPos := strings.Index(output, "Beta")
 	gammaPos := strings.Index(output, "Gamma")
-	
+
 	assert.True(t, alphaPos < betaPos, "Alpha should appear before Beta")
 	assert.True(t, betaPos < gammaPos, "Beta should appear before Gamma")
 }
@@ -358,22 +358,22 @@ func TestSearchCommand_Pagination(t *testing.T) {
 	// TODO: Search functionality is not yet fully implemented
 	// Skip these tests temporarily to allow CI to pass while search is being developed
 	t.Skip("Search functionality is not yet fully implemented - tests will be enabled when search is complete")
-	
+
 	// Create temporary vault
 	tempDir := t.TempDir()
 	vaultPath := filepath.Join(tempDir, "vault")
-	
+
 	// Initialize vault
 	initCmd := newInitCmd()
 	initCmd.SetArgs([]string{vaultPath})
 	err := initCmd.Execute()
 	require.NoError(t, err)
-	
+
 	// Create notes directory
 	notesDir := filepath.Join(vaultPath, "notes")
 	err = os.MkdirAll(notesDir, 0755)
 	require.NoError(t, err)
-	
+
 	// Create multiple notes
 	for i := 0; i < 10; i++ {
 		filename := fmt.Sprintf("note-%02d.md", i)
@@ -382,43 +382,43 @@ func TestSearchCommand_Pagination(t *testing.T) {
 		err := os.WriteFile(notePath, []byte(content), 0644)
 		require.NoError(t, err)
 	}
-	
+
 	// Change to vault directory for tests to work
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
 	defer func() { _ = os.Chdir(oldWd) }()
-	
+
 	err = os.Chdir(vaultPath)
 	require.NoError(t, err)
-	
+
 	// Test with limit
 	cmd := newRootCmd()
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"search", "keyword", "--limit", "3", "--json"})
-	
+
 	err = cmd.Execute()
 	require.NoError(t, err)
-	
+
 	var result struct {
-		Count   int `json:"count"`
+		Count   int        `json:"count"`
 		Results []struct{} `json:"results"`
 	}
 	err = json.Unmarshal(buf.Bytes(), &result)
 	require.NoError(t, err)
 	assert.Equal(t, 3, result.Count)
-	
+
 	// Test with offset
 	cmd = newRootCmd()
 	buf.Reset()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"search", "keyword", "--limit", "3", "--offset", "5", "--json"})
-	
+
 	err = cmd.Execute()
 	require.NoError(t, err)
-	
+
 	err = json.Unmarshal(buf.Bytes(), &result)
 	require.NoError(t, err)
 	assert.Equal(t, 3, result.Count)

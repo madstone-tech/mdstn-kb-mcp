@@ -41,23 +41,23 @@ type VectorSearchType string
 
 const (
 	VectorSearchTypeNone     VectorSearchType = "none"
-	VectorSearchTypeLocal    VectorSearchType = "local"     // Local vector database (e.g., SQLite with vector extension)
-	VectorSearchTypePinecone VectorSearchType = "pinecone"  // Pinecone vector database
-	VectorSearchTypeWeaviate VectorSearchType = "weaviate"  // Weaviate vector database
-	VectorSearchTypeChroma   VectorSearchType = "chroma"    // Chroma vector database
-	VectorSearchTypeQdrant   VectorSearchType = "qdrant"    // Qdrant vector database
+	VectorSearchTypeLocal    VectorSearchType = "local"    // Local vector database (e.g., SQLite with vector extension)
+	VectorSearchTypePinecone VectorSearchType = "pinecone" // Pinecone vector database
+	VectorSearchTypeWeaviate VectorSearchType = "weaviate" // Weaviate vector database
+	VectorSearchTypeChroma   VectorSearchType = "chroma"   // Chroma vector database
+	VectorSearchTypeQdrant   VectorSearchType = "qdrant"   // Qdrant vector database
 )
 
 // EmbeddingProvider represents the type of embedding provider
 type EmbeddingProvider string
 
 const (
-	EmbeddingProviderNone     EmbeddingProvider = "none"
-	EmbeddingProviderOpenAI   EmbeddingProvider = "openai"
-	EmbeddingProviderAzure    EmbeddingProvider = "azure"
-	EmbeddingProviderHugging  EmbeddingProvider = "huggingface"
-	EmbeddingProviderCohere   EmbeddingProvider = "cohere"
-	EmbeddingProviderLocal    EmbeddingProvider = "local"    // Local embedding model
+	EmbeddingProviderNone    EmbeddingProvider = "none"
+	EmbeddingProviderOpenAI  EmbeddingProvider = "openai"
+	EmbeddingProviderAzure   EmbeddingProvider = "azure"
+	EmbeddingProviderHugging EmbeddingProvider = "huggingface"
+	EmbeddingProviderCohere  EmbeddingProvider = "cohere"
+	EmbeddingProviderLocal   EmbeddingProvider = "local" // Local embedding model
 )
 
 // Document represents a document for vector indexing

@@ -86,7 +86,7 @@ Supports nested keys using dot notation (e.g., server.http.port).`,
 			// Save configuration to profile
 			profileManager := getProfileManager()
 			currentProfile := getProfile()
-			
+
 			if err := profileManager.UpdateProfile(currentProfile, cfg); err != nil {
 				return fmt.Errorf("failed to save configuration to profile '%s': %w", currentProfile, err)
 			}
@@ -132,7 +132,7 @@ func newConfigPathCmd() *cobra.Command {
 		Long:  `Show the path to the current configuration file.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentProfile := getProfile()
-			
+
 			// Check if we're using local vault configuration
 			if currentProfile == "local" {
 				// Find local vault config path
@@ -143,7 +143,7 @@ func newConfigPathCmd() *cobra.Command {
 					return nil
 				}
 			}
-			
+
 			// Show profile configuration path
 			homeDir, err := os.UserHomeDir()
 			if err != nil {

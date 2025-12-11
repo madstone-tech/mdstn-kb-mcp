@@ -8,9 +8,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/spf13/cobra"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
+	"github.com/spf13/cobra"
 )
 
 func newProfileCmd() *cobra.Command {
@@ -107,7 +107,7 @@ Examples:
 			}
 
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile '%s' created successfully.\n", profileName)
-			
+
 			// Ask if user wants to switch to the new profile
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Switch to profile '%s'? (y/N): ", profileName)
 			reader := bufio.NewReader(cmd.InOrStdin())
@@ -125,15 +125,15 @@ Examples:
 
 	// Storage type flags
 	cmd.Flags().Var((*storageTypeValue)(&options.StorageType), "storage-type", "Storage backend type (local, s3)")
-	
+
 	// Local storage flags
 	cmd.Flags().StringVar(&options.LocalPath, "local-path", "", "Path for local storage")
-	
+
 	// S3 storage flags
 	cmd.Flags().StringVar(&options.S3Bucket, "s3-bucket", "", "S3 bucket name")
 	cmd.Flags().StringVar(&options.S3Region, "s3-region", "", "S3 region")
 	cmd.Flags().StringVar(&options.S3Endpoint, "s3-endpoint", "", "S3 endpoint URL (for S3-compatible services)")
-	
+
 	// Vault flags
 	cmd.Flags().StringVar(&options.VaultName, "vault-name", "", "Name for the vault")
 	cmd.Flags().StringVar(&options.Description, "description", "", "Description for the profile")
@@ -375,13 +375,13 @@ func printProfilesTable(out io.Writer, profiles []config.ProfileInfo) error {
 		if profile.IsActive {
 			active = "*"
 		}
-		
+
 		defaultFlag := ""
 		if profile.IsDefault {
 			defaultFlag = "default"
 		}
 
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", 
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 			profile.Name, active, profile.StorageType, defaultFlag)
 	}
 
@@ -396,21 +396,21 @@ func printProfilesJSON(out io.Writer, profiles []config.ProfileInfo) error {
 
 func printConfigTable(out io.Writer, profileName string, config *types.Config) error {
 	_, _ = fmt.Fprintf(out, "Profile: %s\n\n", profileName)
-	
+
 	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
 	defer func() { _ = w.Flush() }()
 
 	_, _ = fmt.Fprintln(w, "SECTION\tKEY\tVALUE")
-	
+
 	// Vault configuration
 	_, _ = fmt.Fprintf(w, "vault\tname\t%s\n", config.Vault.Name)
 	_, _ = fmt.Fprintf(w, "vault\tnotes_dir\t%s\n", config.Vault.NotesDir)
 	_, _ = fmt.Fprintf(w, "vault\tdaily_dir\t%s\n", config.Vault.DailyDir)
 	_, _ = fmt.Fprintf(w, "vault\ttemplates_dir\t%s\n", config.Vault.TemplatesDir)
-	
+
 	// Storage configuration
 	_, _ = fmt.Fprintf(w, "storage\ttype\t%s\n", config.Storage.Type)
-	
+
 	switch config.Storage.Type {
 	case types.StorageTypeLocal:
 		_, _ = fmt.Fprintf(w, "storage.local\tpath\t%s\n", config.Storage.Local.Path)
@@ -422,7 +422,7 @@ func printConfigTable(out io.Writer, profileName string, config *types.Config) e
 			_, _ = fmt.Fprintf(w, "storage.s3\tendpoint\t%s\n", config.Storage.S3.Endpoint)
 		}
 	}
-	
+
 	// Server configuration
 	_, _ = fmt.Fprintf(w, "server.http\tenabled\t%t\n", config.Server.HTTP.Enabled)
 	_, _ = fmt.Fprintf(w, "server.http\thost\t%s\n", config.Server.HTTP.Host)

@@ -1,19 +1,15 @@
 # GoReleaser configuration for kbVault
 # See: https://goreleaser.com
 
-# The lines below are called `modelines`. See `:help modeline`
-# Feel free to remove those if you don't want/need to use them.
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-# vim: set ts=2 sw=2 tw=0 fo=cnqoj
-
 version: 2
+# Project metadata:
+project_name: kbvault
+# Environment variables:
+env:
+  - GO111MODULE=on
 
-before:
-  hooks:
-    # You may remove this if you don't use go modules.
-    - go mod tidy
-    # you may remove this if you don't need go generate
-    - go generate ./...
+git:
+  tag_sort: -version:refname
 
 builds:
   - id: kbvault
@@ -27,15 +23,27 @@ builds:
     goarch:
       - amd64
       - arm64
+    flags: -trimpath
     ldflags:
-      - -s -w 
-      - -X main.Version={{.Version}}
-      - -X main.CommitHash={{.ShortCommit}}
-      - -X main.BuildTime={{.Date}}
-    mod_timestamp: '{{ .CommitTimestamp }}'
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+# universal_binaries for macOS
+universal_binaries:
+  - id: kbvault_universal
+    replace: true
+    name_template: kbvault
+
+before:
+  hooks:
+    - go mod tidy
+    - ./scripts/generate-completions.sh
 
 archives:
-  - id: kbvault
+  - id: default
     format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
@@ -52,14 +60,17 @@ archives:
     files:
       - README.md
       - LICENSE
-      - docs/**/*
+      - CHANGELOG*
+      - completions/*
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
+  algorithm: sha256
 
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
 
+# Changelog
 changelog:
   sort: asc
   use: github
@@ -68,75 +79,30 @@ changelog:
       - "^docs:"
       - "^test:"
       - "^ci:"
-      - "^build:"
+      - "^chore:"
       - "^style:"
-      - "^refactor:"
+      - "merge conflict"
       - Merge pull request
+      - Merge remote-tracking branch
       - Merge branch
-      - go mod tidy
   groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+    - title: "New Features"
+      regexp: "^.*feat[(\\w)]*:+.*$"
       order: 0
-    - title: 'Bug fixes'
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+    - title: "Bug Fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
       order: 1
-    - title: 'Performance improvements'
-      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+    - title: "Enhancements"
+      regexp: "^.*enhance[(\\w)]*:+.*$"
       order: 2
-    - title: Others
+    - title: "Performance Improvements"
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 3
+    - title: "Refactoring"
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 4
+    - title: "Other"
       order: 999
-
-# Docker configuration
-dockers:
-  - id: kbvault-amd64
-    goos: linux
-    goarch: amd64
-    image_templates:
-      - "ghcr.io/madstone-tech/kbvault:{{ .Version }}-amd64"
-      - "ghcr.io/madstone-tech/kbvault:latest-amd64"
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/madstone-tech/mdstn-kb-mcp"
-      - "--label=org.opencontainers.image.description=High-performance Go knowledge management tool"
-      - "--label=org.opencontainers.image.licenses=MIT"
-      - "--platform=linux/amd64"
-
-  - id: kbvault-arm64
-    goos: linux
-    goarch: arm64
-    image_templates:
-      - "ghcr.io/madstone-tech/kbvault:{{ .Version }}-arm64"
-      - "ghcr.io/madstone-tech/kbvault:latest-arm64"
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/madstone-tech/mdstn-kb-mcp"
-      - "--label=org.opencontainers.image.description=High-performance Go knowledge management tool"
-      - "--label=org.opencontainers.image.licenses=MIT"
-      - "--platform=linux/arm64"
-
-docker_manifests:
-  - name_template: "ghcr.io/madstone-tech/kbvault:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/madstone-tech/kbvault:{{ .Version }}-amd64"
-      - "ghcr.io/madstone-tech/kbvault:{{ .Version }}-arm64"
-  
-  - name_template: "ghcr.io/madstone-tech/kbvault:latest"
-    image_templates:
-      - "ghcr.io/madstone-tech/kbvault:latest-amd64"
-      - "ghcr.io/madstone-tech/kbvault:latest-arm64"
 
 # Software Bill of Materials (SBOM)
 sboms:
@@ -145,113 +111,77 @@ sboms:
     artifacts: source
 
 release:
-  # Repo in which the release will be created.
-  # Default is extracted from the origin remote URL or empty if its private hosted.
   github:
     owner: madstone-tech
     name: mdstn-kb-mcp
-
-  # IDs of the archives to use.
-  # Default is empty, which includes all archives.
-  ids:
-    - kbvault
-
-  # If set to true, will not auto-publish the release.
   draft: false
-
-  # Whether to remove existing draft releases with the same name before creating
-  # a new one. Only effective if `draft` is set to true.
-  replace_existing_draft: true
-
-  # Useful if you want to delay the creation of the tag in the remote.
-  # You can create the tag locally, but not push it, and run GoReleaser.
-  # It'll then set the `target_commitish` portion of the GitHub release to the
-  # value of this field.
-  # Only works on GitHub.
-  target_commitish: '{{ .Commit }}'
-
-  # If set to auto, will mark the release as not ready for production
-  # in case there is an indicator for this in the tag e.g. v1.0.0-rc1
-  # If set to true, will mark the release as not ready for production.
-  # Default is false.
   prerelease: auto
-
-  # What to do with the release notes in case there the release already exists.
-  #
-  # Valid options are:
-  # - `keep-existing`: keep the existing notes
-  # - `append`: append the current release notes to the existing notes
-  # - `prepend`: prepend the current release notes to the existing notes
-  # - `replace`: replace existing notes
-  #
-  # Default is `keep-existing`.
-  mode: append
+  mode: replace
 
   # Header for the release body.
   header: |
-    ## kbVault {{.Version}}
+    ## kbVault {{.Version}} - Knowledge Management CLI
 
     Welcome to this new release of kbVault! 🎉
 
-    This release includes:
+    This release brings new features and improvements to your knowledge management workflow.
+
+    ### Installation
+
+    **Using Homebrew (macOS & Linux):**
+    ```bash
+    brew tap madstone-tech/tap
+    brew install kbvault
+    ```
+
+    **Using Go:**
+    ```bash
+    go install github.com/madstone-tech/mdstn-kb-mcp/cmd/kbvault@{{.Version}}
+    ```
+
+    **Binary Download:**
+    Download the appropriate binary for your platform from the assets below.
+
+    ### Verification
+
+    ```bash
+    kbvault --version
+    ```
 
   # Footer for the release body.
   footer: |
-    ## Docker Images
+    ## What's Changed
 
-    Docker images are available for multiple architectures:
-
-    ```bash
-    # Latest version
-    docker pull ghcr.io/madstone-tech/kbvault:latest
-
-    # Specific version
-    docker pull ghcr.io/madstone-tech/kbvault:{{.Version}}
-
-    # Architecture-specific
-    docker pull ghcr.io/madstone-tech/kbvault:{{.Version}}-amd64
-    docker pull ghcr.io/madstone-tech/kbvault:{{.Version}}-arm64
-    ```
-
-    ## Installation
-
-    ### Binary Download
-    
-    Download the appropriate binary for your platform from the assets below.
-
-    ### macOS via Homebrew
-    
-    ```bash
-    # Coming soon!
-    # brew install madstone-tech/tap/kbvault
-    ```
-
-    ### Build from Source
-    
-    ```bash
-    git clone https://github.com/madstone-tech/mdstn-kb-mcp.git
-    cd mdstn-kb-mcp
-    make build
-    ```
-
-    ---
+    This release includes the following changes from the previous version.
 
     **Full Changelog**: https://github.com/madstone-tech/mdstn-kb-mcp/compare/{{.PreviousTag}}...{{.Tag}}
 
-  # You can disable this pipe in order to not upload any artifacts.
-  disable: false
+    ---
 
-  # Set this to true if you want to disable just the artifact upload to the SCM.
-  skip_upload: false
+    **Checksums**: Verify downloaded binaries with `sha256sum -c checksums.txt`
 
-milestones:
-  # You can disable this pipe in order to not set any milestone
-  close: true
 
-  # You can keep the milestone open for the current release.
-  # Default is false.
-  keep_open: false
+# Homebrew (macOS package manager)
+brews:
+  - repository:
+      owner: madstone-tech
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/madstone-tech/mdstn-kb-mcp
+    description: "Knowledge Base Vault CLI - A command-line tool for managing and searching your knowledge base"
+    license: MIT
+    test: |
+      system "#{bin}/kbvault --version"
+    install: |
+      bin.install "kbvault"
 
-  # Fail release if unable to set milestone.
-  # Default is false.
-  fail_on_error: false
+      # Generate and install shell completions
+       bash_completion.install "completions/kbvault.bash" => "kbvault" if File.exist?("completions/kbvault.bash")
+      zsh_completion.install "completions/_kbvault" if File.exist?("completions/_kbvault")
+      fish_completion.install "completions/kbvault.fish" if File.exist?("completions/kbvault.fish")
+
+# Announce releases
+announce:
+  # Skip announcement for now
+  skip: true

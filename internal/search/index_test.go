@@ -9,7 +9,7 @@ import (
 
 func TestIndex_Add(t *testing.T) {
 	idx := NewIndex()
-	
+
 	doc := &IndexedDocument{
 		ID:      "test-1",
 		Title:   "Test Document",
@@ -17,12 +17,12 @@ func TestIndex_Add(t *testing.T) {
 		Tags:    []string{"test", "example"},
 		Type:    "note",
 	}
-	
+
 	idx.Add(doc)
-	
+
 	// Verify document was added
 	assert.Equal(t, 1, idx.Size())
-	
+
 	// Verify document can be retrieved
 	retrieved, exists := idx.GetDocument("test-1")
 	assert.True(t, exists)
@@ -31,7 +31,7 @@ func TestIndex_Add(t *testing.T) {
 
 func TestIndex_Remove(t *testing.T) {
 	idx := NewIndex()
-	
+
 	// Add documents
 	doc1 := &IndexedDocument{
 		ID:      "doc-1",
@@ -40,7 +40,7 @@ func TestIndex_Remove(t *testing.T) {
 		Tags:    []string{"tag1"},
 		Type:    "note",
 	}
-	
+
 	doc2 := &IndexedDocument{
 		ID:      "doc-2",
 		Title:   "Document Two",
@@ -48,21 +48,21 @@ func TestIndex_Remove(t *testing.T) {
 		Tags:    []string{"tag2"},
 		Type:    "note",
 	}
-	
+
 	idx.Add(doc1)
 	idx.Add(doc2)
-	
+
 	assert.Equal(t, 2, idx.Size())
-	
+
 	// Remove first document
 	idx.Remove("doc-1")
-	
+
 	assert.Equal(t, 1, idx.Size())
-	
+
 	// Verify doc1 is gone
 	_, exists := idx.GetDocument("doc-1")
 	assert.False(t, exists)
-	
+
 	// Verify doc2 still exists
 	_, exists = idx.GetDocument("doc-2")
 	assert.True(t, exists)
@@ -70,7 +70,7 @@ func TestIndex_Remove(t *testing.T) {
 
 func TestIndex_Search(t *testing.T) {
 	idx := NewIndex()
-	
+
 	// Add test documents
 	docs := []*IndexedDocument{
 		{
@@ -89,20 +89,20 @@ func TestIndex_Search(t *testing.T) {
 			Content: "Introduction to JavaScript programming",
 		},
 	}
-	
+
 	for _, doc := range docs {
 		idx.Add(doc)
 	}
-	
+
 	// Search for "programming" in content
 	results := idx.Search("programming", "content")
 	assert.Len(t, results, 3) // All documents have "programming" in content
-	
+
 	// Search for "go" in title
 	results = idx.Search("go", "title")
 	assert.Len(t, results, 1)
 	assert.Equal(t, "1", results[0].ID)
-	
+
 	// Search for non-existent term
 	results = idx.Search("rust", "title")
 	assert.Len(t, results, 0)
@@ -110,7 +110,7 @@ func TestIndex_Search(t *testing.T) {
 
 func TestIndex_SearchByTag(t *testing.T) {
 	idx := NewIndex()
-	
+
 	docs := []*IndexedDocument{
 		{
 			ID:   "1",
@@ -125,18 +125,18 @@ func TestIndex_SearchByTag(t *testing.T) {
 			Tags: []string{"golang", "advanced"},
 		},
 	}
-	
+
 	for _, doc := range docs {
 		idx.Add(doc)
 	}
-	
+
 	// Search by tag
 	results := idx.SearchByTag("golang")
 	assert.Len(t, results, 2)
-	
+
 	results = idx.SearchByTag("tutorial")
 	assert.Len(t, results, 2)
-	
+
 	results = idx.SearchByTag("advanced")
 	assert.Len(t, results, 1)
 	assert.Equal(t, "3", results[0].ID)
@@ -144,22 +144,22 @@ func TestIndex_SearchByTag(t *testing.T) {
 
 func TestIndex_SearchByType(t *testing.T) {
 	idx := NewIndex()
-	
+
 	docs := []*IndexedDocument{
 		{ID: "1", Type: "note"},
 		{ID: "2", Type: "daily"},
 		{ID: "3", Type: "note"},
 		{ID: "4", Type: "template"},
 	}
-	
+
 	for _, doc := range docs {
 		idx.Add(doc)
 	}
-	
+
 	// Search by type
 	results := idx.SearchByType("note")
 	assert.Len(t, results, 2)
-	
+
 	results = idx.SearchByType("daily")
 	assert.Len(t, results, 1)
 	assert.Equal(t, "2", results[0].ID)
@@ -167,7 +167,7 @@ func TestIndex_SearchByType(t *testing.T) {
 
 func TestIndex_Clear(t *testing.T) {
 	idx := NewIndex()
-	
+
 	// Add some documents
 	for i := 0; i < 5; i++ {
 		idx.Add(&IndexedDocument{
@@ -175,19 +175,19 @@ func TestIndex_Clear(t *testing.T) {
 			Title: "Document",
 		})
 	}
-	
+
 	assert.Equal(t, 5, idx.Size())
-	
+
 	// Clear index
 	idx.Clear()
-	
+
 	assert.Equal(t, 0, idx.Size())
 	assert.Len(t, idx.GetAllDocuments(), 0)
 }
 
 func TestIndex_Tokenize(t *testing.T) {
 	idx := NewIndex()
-	
+
 	tests := []struct {
 		input    string
 		expected []string
@@ -209,7 +209,7 @@ func TestIndex_Tokenize(t *testing.T) {
 			expected: []string{"email", "example", "com"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			tokens := idx.tokenize(tt.input)
@@ -229,9 +229,9 @@ func TestIndex_ToMetadata(t *testing.T) {
 		UpdatedAt: time.Now(),
 		Size:      1024,
 	}
-	
+
 	metadata := doc.ToMetadata()
-	
+
 	assert.Equal(t, doc.ID, metadata.ID)
 	assert.Equal(t, doc.Title, metadata.Title)
 	assert.Equal(t, doc.Tags, metadata.Tags)
@@ -244,7 +244,7 @@ func TestIndex_ToMetadata(t *testing.T) {
 
 func TestIndex_UpdateDocument(t *testing.T) {
 	idx := NewIndex()
-	
+
 	// Add initial document
 	doc := &IndexedDocument{
 		ID:      "update-test",
@@ -252,13 +252,13 @@ func TestIndex_UpdateDocument(t *testing.T) {
 		Content: "Original content",
 		Tags:    []string{"original"},
 	}
-	
+
 	idx.Add(doc)
-	
+
 	// Verify original was indexed
 	results := idx.Search("original", "title")
 	assert.Len(t, results, 1)
-	
+
 	// Update document
 	updatedDoc := &IndexedDocument{
 		ID:      "update-test",
@@ -266,31 +266,31 @@ func TestIndex_UpdateDocument(t *testing.T) {
 		Content: "Updated content",
 		Tags:    []string{"updated"},
 	}
-	
+
 	idx.Add(updatedDoc)
-	
+
 	// Verify old content is gone
 	results = idx.Search("original", "title")
 	assert.Len(t, results, 0)
-	
+
 	// Verify new content is indexed
 	results = idx.Search("updated", "title")
 	assert.Len(t, results, 1)
-	
+
 	// Verify tags were updated
 	results = idx.SearchByTag("original")
 	assert.Len(t, results, 0)
-	
+
 	results = idx.SearchByTag("updated")
 	assert.Len(t, results, 1)
 }
 
 func TestIndex_ConcurrentAccess(t *testing.T) {
 	idx := NewIndex()
-	
+
 	// Test concurrent adds
 	done := make(chan bool)
-	
+
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			doc := &IndexedDocument{
@@ -302,25 +302,25 @@ func TestIndex_ConcurrentAccess(t *testing.T) {
 			done <- true
 		}(i)
 	}
-	
+
 	// Wait for all goroutines
 	for i := 0; i < 10; i++ {
 		<-done
 	}
-	
+
 	// Verify all documents were added
 	assert.Equal(t, 10, idx.Size())
-	
+
 	// Test concurrent searches
 	searchDone := make(chan int)
-	
+
 	for i := 0; i < 5; i++ {
 		go func() {
 			results := idx.Search("concurrent", "title")
 			searchDone <- len(results)
 		}()
 	}
-	
+
 	// Verify searches complete without panic
 	for i := 0; i < 5; i++ {
 		count := <-searchDone

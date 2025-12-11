@@ -31,10 +31,10 @@ func TestProfileListCmd(t *testing.T) {
 	// Test table output (default)
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	err := cmd.RunE(cmd, []string{})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "NAME")
 	assert.Contains(t, output, "ACTIVE")
@@ -47,17 +47,17 @@ func TestProfileListCmd_JSON(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 
 	cmd := newProfileListCmd()
-	
+
 	// Set JSON output flag
 	err := cmd.Flags().Set("output", "json")
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	err = cmd.RunE(cmd, []string{})
 	assert.NoError(t, err)
-	
+
 	// Verify it's valid JSON
 	var profiles []config.ProfileInfo
 	err = json.Unmarshal(buf.Bytes(), &profiles)
@@ -78,14 +78,14 @@ func TestProfileCreateCmd(t *testing.T) {
 	// Test basic profile creation
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	// Mock stdin to respond "n" to switch prompt
 	stdin := strings.NewReader("n\n")
 	cmd.SetIn(stdin)
-	
+
 	err := cmd.RunE(cmd, []string{"test-profile"})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "Profile 'test-profile' created successfully")
 }
@@ -96,7 +96,7 @@ func TestProfileCreateCmd_WithFlags(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 
 	cmd := newProfileCreateCmd()
-	
+
 	// Set flags
 	err := cmd.Flags().Set("storage-type", "s3")
 	require.NoError(t, err)
@@ -109,21 +109,21 @@ func TestProfileCreateCmd_WithFlags(t *testing.T) {
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	// Mock stdin to respond "n" to switch prompt
 	stdin := strings.NewReader("n\n")
 	cmd.SetIn(stdin)
-	
+
 	err = cmd.RunE(cmd, []string{"s3-profile"})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "Profile 's3-profile' created successfully")
-	
+
 	// Verify the profile was created with correct settings
 	pm, err := config.NewProfileManager()
 	require.NoError(t, err)
-	
+
 	profileConfig, err := pm.GetConfig("s3-profile")
 	assert.NoError(t, err)
 	assert.Equal(t, "test-vault", profileConfig.Vault.Name)
@@ -134,7 +134,7 @@ func TestProfileCreateCmd_WithFlags(t *testing.T) {
 
 func TestProfileCreateCmd_InvalidArgs(t *testing.T) {
 	cmd := newProfileCreateCmd()
-	
+
 	// Test with no arguments - should validate args first
 	err := cmd.Args(cmd, []string{})
 	assert.Error(t, err)
@@ -152,17 +152,17 @@ func TestProfileDeleteCmd(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newProfileDeleteCmd()
-	
+
 	// Set force flag to avoid confirmation prompt
 	err = cmd.Flags().Set("force", "true")
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	err = cmd.RunE(cmd, []string{"delete-me"})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "Profile 'delete-me' deleted successfully")
 }
@@ -182,14 +182,14 @@ func TestProfileDeleteCmd_WithConfirmation(t *testing.T) {
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	// Mock stdin to respond "y" to confirmation
 	stdin := strings.NewReader("y\n")
 	cmd.SetIn(stdin)
-	
+
 	err = cmd.RunE(cmd, []string{"delete-me-confirm"})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "Profile 'delete-me-confirm' deleted successfully")
 }
@@ -200,14 +200,14 @@ func TestProfileDeleteCmd_DefaultProfile(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 
 	cmd := newProfileDeleteCmd()
-	
+
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	// Mock stdin to respond "y" to confirmation so we get the actual delete error
 	stdin := strings.NewReader("y\n")
 	cmd.SetIn(stdin)
-	
+
 	err := cmd.RunE(cmd, []string{"default"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot delete the default profile")
@@ -228,13 +228,13 @@ func TestProfileSwitchCmd(t *testing.T) {
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	err = cmd.RunE(cmd, []string{"switch-to-me"})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "Switched to profile 'switch-to-me'")
-	
+
 	// Verify the switch worked by creating a new ProfileManager instance
 	pm2, err := config.NewProfileManager()
 	require.NoError(t, err)
@@ -250,11 +250,11 @@ func TestProfileShowCmd(t *testing.T) {
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	// Show default profile
 	err := cmd.RunE(cmd, []string{})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "Profile: default")
 }
@@ -265,17 +265,17 @@ func TestProfileShowCmd_JSON(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 
 	cmd := newProfileShowCmd()
-	
+
 	// Set JSON output flag
 	err := cmd.Flags().Set("output", "json")
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	err = cmd.RunE(cmd, []string{})
 	assert.NoError(t, err)
-	
+
 	// Verify it's valid JSON
 	var config map[string]interface{}
 	err = json.Unmarshal(buf.Bytes(), &config)
@@ -299,13 +299,13 @@ func TestProfileCopyCmd(t *testing.T) {
 
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	err = cmd.RunE(cmd, []string{"source", "target"})
 	assert.NoError(t, err)
-	
+
 	output := buf.String()
 	assert.Contains(t, output, "Profile 'source' copied to 'target' successfully")
-	
+
 	// Verify the copy exists
 	profiles, err := pm.ListProfiles()
 	assert.NoError(t, err)
@@ -334,10 +334,10 @@ func TestProfileSetGetCmd(t *testing.T) {
 	setCmd := newProfileSetCmd()
 	var setBuf bytes.Buffer
 	setCmd.SetOut(&setBuf)
-	
+
 	err = setCmd.RunE(setCmd, []string{"test-set-get", "vault.name", "test-vault"})
 	assert.NoError(t, err)
-	
+
 	output := setBuf.String()
 	assert.Contains(t, output, "Set test-set-get.vault.name = test-vault")
 
@@ -345,10 +345,10 @@ func TestProfileSetGetCmd(t *testing.T) {
 	getCmd := newProfileGetCmd()
 	var getBuf bytes.Buffer
 	getCmd.SetOut(&getBuf)
-	
+
 	err = getCmd.RunE(getCmd, []string{"test-set-get", "vault.name"})
 	assert.NoError(t, err)
-	
+
 	output = getBuf.String()
 	assert.Contains(t, output, "test-vault")
 }
@@ -401,7 +401,6 @@ func TestPrintFunctions(t *testing.T) {
 	err = printProfilesJSON(&buf, profiles)
 	assert.NoError(t, err)
 }
-
 
 // Integration test for the complete profile workflow
 func TestProfileWorkflow(t *testing.T) {

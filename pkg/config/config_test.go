@@ -10,7 +10,7 @@ import (
 
 func TestManager_Load(t *testing.T) {
 	manager := NewManager()
-	
+
 	config, err := manager.Load()
 	if err != nil {
 		t.Fatalf("Failed to load default config: %v", err)
@@ -89,15 +89,15 @@ host = "localhost"
 func TestManager_LoadFromEnv(t *testing.T) {
 	// Set environment variables
 	envVars := map[string]string{
-		"KBVAULT_NAME":                     "env-vault",
-		"KBVAULT_STORAGE_TYPE":             "s3",
-		"KBVAULT_STORAGE_S3_BUCKET":        "test-bucket",
-		"KBVAULT_STORAGE_S3_REGION":        "us-west-2",
-		"AWS_ACCESS_KEY_ID":                "test-key",
-		"AWS_SECRET_ACCESS_KEY":            "test-secret",
-		"KBVAULT_HTTP_PORT":                "9090",
-		"KBVAULT_CACHE_ENABLED":            "true",
-		"KBVAULT_MAX_FILE_SIZE":            "20MB",
+		"KBVAULT_NAME":                      "env-vault",
+		"KBVAULT_STORAGE_TYPE":              "s3",
+		"KBVAULT_STORAGE_S3_BUCKET":         "test-bucket",
+		"KBVAULT_STORAGE_S3_REGION":         "us-west-2",
+		"AWS_ACCESS_KEY_ID":                 "test-key",
+		"AWS_SECRET_ACCESS_KEY":             "test-secret",
+		"KBVAULT_HTTP_PORT":                 "9090",
+		"KBVAULT_CACHE_ENABLED":             "true",
+		"KBVAULT_MAX_FILE_SIZE":             "20MB",
 		"KBVAULT_STORAGE_LOCAL_CREATE_DIRS": "false",
 	}
 
@@ -189,7 +189,7 @@ func TestManager_WriteToFile(t *testing.T) {
 
 func TestManager_FindConfigFile(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Create a config file in temp directory
 	configPath := filepath.Join(tempDir, "kbvault.toml")
 	if err := os.WriteFile(configPath, []byte("[vault]\nname = \"test\""), 0644); err != nil {
@@ -296,7 +296,7 @@ func TestManager_GetConfigPaths(t *testing.T) {
 
 func TestManager_ConfigPrecedence(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Create config file with one value
 	configPath := filepath.Join(tempDir, "test.toml")
 	configContent := `

@@ -10,10 +10,10 @@ import (
 // Test helper function to create a sample note
 func createSampleNote() *types.Note {
 	return &types.Note{
-		ID:       "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-		Title:    "Sample Note",
-		Content:  "This is a sample note content with some **markdown** formatting.",
-		FilePath: "/vault/notes/01ARZ3NDEKTSV4RRFFQ69G5FAV.md",
+		ID:        "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+		Title:     "Sample Note",
+		Content:   "This is a sample note content with some **markdown** formatting.",
+		FilePath:  "/vault/notes/01ARZ3NDEKTSV4RRFFQ69G5FAV.md",
 		CreatedAt: time.Date(2023, 12, 1, 10, 30, 0, 0, time.UTC),
 		UpdatedAt: time.Date(2023, 12, 2, 15, 45, 0, 0, time.UTC),
 		Frontmatter: types.Frontmatter{
@@ -63,10 +63,10 @@ func TestDisplayNoteJSON(t *testing.T) {
 // Additional tests for edge cases
 func TestDisplayFunctionsWithEmptyNote(t *testing.T) {
 	note := &types.Note{
-		ID:       "",
-		Title:    "",
-		Content:  "",
-		FilePath: "",
+		ID:        "",
+		Title:     "",
+		Content:   "",
+		FilePath:  "",
 		CreatedAt: time.Time{},
 		UpdatedAt: time.Time{},
 		Frontmatter: types.Frontmatter{
@@ -94,13 +94,13 @@ func TestDisplayFunctionsWithEmptyNote(t *testing.T) {
 func TestDisplayFunctionsWithNilNote(t *testing.T) {
 	// Test that functions handle nil note gracefully
 	// These should not panic
-	
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("displayNoteDefault() panicked with nil note: %v", r)
 		}
 	}()
-	
+
 	// Note: these functions might panic with nil, which is expected behavior
 	// The defer above will catch any panics and fail the test
 }

@@ -79,7 +79,7 @@ func (m *Manager) SaveToFile(config *types.Config, path string) error {
 	oldConfig := m.config
 	m.config = config
 	defer func() { m.config = oldConfig }()
-	
+
 	return m.WriteToFile(path)
 }
 
@@ -267,7 +267,7 @@ func parseInt(s string) (int, error) {
 
 func parseBytes(s string) (int64, error) {
 	s = strings.ToUpper(strings.TrimSpace(s))
-	
+
 	// Handle suffixes
 	multiplier := int64(1)
 	if strings.HasSuffix(s, "KB") {

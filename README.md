@@ -1,103 +1,300 @@
-# kbVault - Knowledge Base Vault
+# kbVault - Knowledge Base Vault CLI
 
-A high-performance Go tool for managing markdown-based knowledge vaults with multiple interaction interfaces (CLI, TUI, API, MCP), designed for both human users and LLM agents.
+A high-performance, production-ready Go knowledge management system with multiple storage backends, full-text search, and powerful CLI interface. Designed for managing markdown-based knowledge vaults at scale.
 
-## Features
+## What is kbVault?
 
-- **Multi-Interface Design**: CLI, TUI, HTTP API, and MCP support
-- **Storage Flexibility**: Local filesystem and S3-compatible storage
-- **Smart Caching**: Multi-level caching for optimal performance
-- **Note ID System**: Unique timestamp-based note identification
-- **Template System**: Customizable note templates
-- **Link Management**: Bidirectional link tracking and validation
-- **Search Engine**: Full-text and metadata-based search
-- **Optional gRPC**: High-performance API for specialized use cases
+kbVault is a command-line tool for managing your knowledge base. Store notes in markdown, organize them with tags and links, search across your entire vault, and access your knowledge from anywhere—all with zero external dependencies for core functionality.
+
+**Perfect for:**
+- Personal knowledge management systems
+- Team documentation
+- Research note-taking
+- Project-specific vaults
+- Multiple concurrent knowledge bases with profiles
+
+## Key Features
+
+- **📝 Simple Note Management** - Create, edit, delete, and organize notes with ease
+- **🔍 Full-Text Search** - Fast search across all your notes
+- **🔗 Bidirectional Links** - Connect related notes automatically
+- **📦 Storage Flexibility** - Local filesystem or S3-compatible storage
+- **👥 Multi-Profile Support** - Manage multiple vaults with different configurations
+- **⚙️ Zero Configuration** - Works out-of-the-box with sensible defaults
+- **🚀 High Performance** - Optimized for vaults with thousands of notes
+- **🐚 Shell Completions** - Tab completion for bash, zsh, and fish
 
 ## Quick Start
 
+### Installation
+
+**macOS & Linux (Homebrew):**
 ```bash
-# Initialize a new vault
-kbvault init ~/my-knowledge-vault
+brew tap madstone-tech/tap
+brew install kbvault
+```
+
+**Using Go:**
+```bash
+go install github.com/madstone-tech/mdstn-kb-mcp/cmd/kbvault@latest
+```
+
+**From Binary:**
+Download from [GitHub Releases](https://github.com/madstone-tech/mdstn-kb-mcp/releases)
+
+### Your First Vault
+
+```bash
+# Initialize a vault
+kbvault init ~/my-vault
 
 # Create your first note
-kbvault new "My First Note"
+kbvault new "Welcome to kbVault"
+
+# List your notes
+kbvault list
 
 # Search notes
-kbvault search "first"
-
-# Start the API server
-kbvault server start
-
-# Launch the TUI
-kbvault tui
+kbvault search "welcome"
 ```
+
+See [Getting Started Guide](docs/guides/getting-started.md) for detailed setup.
+
+## Usage Examples
+
+```bash
+# Create a note
+kbvault new "Python Tips"
+
+# Search your vault
+kbvault search "async programming"
+
+# List notes with filtering
+kbvault list --tag python
+
+# Edit a note
+kbvault edit "Python Tips"
+
+# Manage multiple vaults
+kbvault --profile work new "Team Meeting"
+kbvault --profile personal new "Personal Goal"
+
+# View CLI help
+kbvault --help
+```
+
+See [CLI Reference](docs/guides/cli-reference.md) for all commands.
+
+## Documentation
+
+### For Users
+
+- **[Getting Started](docs/guides/getting-started.md)** - Installation and setup
+- **[CLI Reference](docs/guides/cli-reference.md)** - Complete command documentation
+- **[Configuration Guide](docs/guides/configuration.md)** - Configure your vault
+- **[Profiles & Multi-Vault](docs/guides/profiles.md)** - Manage multiple vaults
+
+### For Developers
+
+- **[Documentation Index](docs/README.md)** - Central hub for all docs
+- **[Architecture Overview](docs/architecture/overview.md)** - System design
+- **[Package Reference](docs/architecture/packages.md)** - Public API documentation
+- **[Building & Testing](docs/development/building.md)** - Development guide
+
+### Project Information
+
+- **[Product Requirements](docs/PRD.md)** - Complete specifications
+- **[Implementation Plan](docs/implementation-sessions.md)** - Development progress
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
 
 ## Project Structure
 
 ```
-├── cmd/kbvault/          # CLI application entry point
-├── internal/             # Private application code
-│   ├── core/            # Core business logic
-│   ├── storage/         # Storage backends (local, S3)
-│   ├── cache/           # Caching layer
-│   ├── api/             # HTTP/gRPC API server
-│   ├── mcp/             # MCP protocol implementation
-│   └── tui/             # Terminal UI
-├── pkg/                  # Public packages
-│   ├── types/           # Shared types
-│   └── utils/           # Utility functions
-├── configs/              # Configuration templates
-├── docs/                 # Documentation
-├── scripts/              # Build and deployment scripts
-└── test/                 # Test files
+kbvault/
+├── cmd/kbvault/              # CLI application
+│   ├── main.go               # Entry point
+│   ├── new.go, show.go, ...  # Commands
+│   └── *_test.go             # Tests
+│
+├── pkg/                       # Public packages
+│   ├── config/               # Configuration & profiles
+│   ├── storage/              # Storage backends
+│   │   ├── local/            # Filesystem storage
+│   │   └── s3/               # S3-compatible storage
+│   ├── types/                # Core types
+│   ├── ulid/                 # ID generation
+│   ├── retry/                # Retry logic
+│   └── vector/               # Vector DB (planned)
+│
+├── internal/                 # Private packages
+│   ├── links/                # Link management
+│   ├── search/               # Search engine
+│   ├── templates/            # Note templates
+│   └── api/, mcp/, tui/      # Future interfaces
+│
+├── docs/                     # Documentation
+│   ├── guides/               # User guides
+│   ├── architecture/         # Architecture docs
+│   ├── development/          # Development docs
+│   └── README.md            # Docs index (MOC)
+│
+├── scripts/                  # Build & utility scripts
+├── completions/              # Shell completions
+├── configs/                  # Config templates
+├── test/                     # Test data
+└── Makefile                  # Build automation
 ```
 
-## Documentation
+## Supported Platforms
 
-- [Product Requirements Document](docs/PRD.md) - Complete project specifications
-- [Architecture Overview](docs/architecture.md) - System design and components
-- [API Documentation](docs/api.md) - HTTP and gRPC API reference
-- [MCP Integration](docs/mcp.md) - Model Context Protocol usage
+| Platform | Architecture | Status |
+|----------|-------------|--------|
+| macOS | Intel (amd64) | ✅ Supported |
+| macOS | Apple Silicon (arm64) | ✅ Supported |
+| Linux | x86_64 (amd64) | ✅ Supported |
+| Linux | ARM (arm64) | ✅ Supported |
+| Windows | x86_64 | 📋 Planned |
+
+## Storage Options
+
+### Local Storage (Default)
+Store notes in your local filesystem as TOML files. Perfect for personal vaults and development.
+
+```toml
+[storage]
+type = "local"
+path = "./notes"
+```
+
+### S3-Compatible Storage
+Store notes in AWS S3 or any S3-compatible service (MinIO, DigitalOcean Spaces, etc.). Ideal for team vaults and cloud backups.
+
+```toml
+[storage]
+type = "s3"
+bucket = "my-kb"
+region = "us-east-1"
+```
+
+See [Configuration Guide](docs/guides/configuration.md) for setup details.
 
 ## Development
 
+### Quick Build
+
 ```bash
-# Install dependencies
-go mod download
+# Build binary
+make build
 
 # Run tests
 make test
 
-# Build binary
-make build
+# Format code
+make fmt
 
-# Run development server
-make dev
+# Full checks
+make check
 ```
+
+### Requirements
+
+- Go 1.25 or later
+- Make
+- golangci-lint (for linting)
+
+See [Building & Testing Guide](docs/development/building.md) for detailed setup.
+
+## Testing
+
+```bash
+# Run full test suite
+go test ./...
+
+# With coverage
+go test -cover ./...
+
+# With race detector
+go test -race ./...
+
+# Specific package
+go test -v ./pkg/config
+```
+
+**Coverage:** 62.8% | **Target:** 70%+
+
+## Performance
+
+kbVault is optimized for performance:
+
+- **⚡ Fast Search**: Indexed full-text search for sub-second results
+- **💾 Minimal Memory**: Efficient indexing and caching
+- **🚀 Scalable**: Supports vaults with thousands of notes
+- **🔄 Incremental Updates**: Only updated notes are re-indexed
+
+Benchmark results available in test output.
 
 ## Configuration
 
-kbVault uses TOML configuration files. Example:
+kbVault uses TOML configuration. Profiles allow you to manage multiple vaults:
 
-```toml
-[vault]
-name = "my-kb"
-notes_dir = "notes"
+```bash
+# Create profiles
+kbvault profile create work --storage-path ~/work-vault
+kbvault profile create personal --storage-path ~/personal-vault
 
-[storage]
-type = "local"
-path = "/path/to/vault"
+# Use specific profile
+kbvault --profile work list
+kbvault --profile personal new "Personal Note"
 
-[server]
-http_enabled = true
-http_port = 8080
-grpc_enabled = false
+# Set default profile
+kbvault profile set-active work
 ```
 
-## License
+See [Profiles Guide](docs/guides/profiles.md) and [Configuration Guide](docs/guides/configuration.md).
 
-MIT License - see [LICENSE](LICENSE) file for details.
+## Roadmap
+
+### Current (v1.0.0+)
+- ✅ Note management (CRUD)
+- ✅ Full-text search
+- ✅ Local & S3 storage
+- ✅ Multi-profile support
+- ✅ Bidirectional links
+- ✅ Shell completions
+
+### Planned (v1.1.0+)
+- 📋 HTTP API
+- 📋 Terminal UI (TUI)
+- 📋 Vector-based semantic search
+- 📋 MCP Protocol support
+- 📋 Windows support
+- 📋 gRPC API
+
+See [Implementation Plan](docs/implementation-sessions.md) for details.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution guidelines.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Development setup
+- Code style guidelines
+- Testing requirements
+- Pull request process
+
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+## Support
+
+- 📖 **Documentation**: Start with [Getting Started](docs/guides/getting-started.md)
+- 🐛 **Report Issues**: [GitHub Issues](https://github.com/madstone-tech/mdstn-kb-mcp/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/madstone-tech/mdstn-kb-mcp/discussions)
+- 🤝 **Contribute**: See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Acknowledgments
+
+Built with Go and inspired by modern knowledge management systems. Special thanks to all contributors and users.
+
+---
+
+**[📚 Documentation](docs/README.md) | [🚀 Quick Start](docs/guides/getting-started.md) | [💻 CLI Reference](docs/guides/cli-reference.md) | [🔧 API Docs](docs/architecture/packages.md)**

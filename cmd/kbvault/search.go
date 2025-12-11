@@ -62,7 +62,6 @@ Examples:
 				return fmt.Errorf("configuration not initialized")
 			}
 
-
 			// Initialize storage backend
 			storageBackend, err := storage.CreateStorage(cfg.Storage)
 			if err != nil {
@@ -111,7 +110,7 @@ Examples:
 			// Parse date range if provided
 			if after != "" || before != "" {
 				dateRange := &search.DateRange{}
-				
+
 				if after != "" {
 					t, err := time.Parse("2006-01-02", after)
 					if err != nil {
@@ -119,7 +118,7 @@ Examples:
 					}
 					dateRange.After = t
 				}
-				
+
 				if before != "" {
 					t, err := time.Parse("2006-01-02", before)
 					if err != nil {
@@ -127,7 +126,7 @@ Examples:
 					}
 					dateRange.Before = t
 				}
-				
+
 				query.DateRange = dateRange
 			}
 
@@ -191,13 +190,13 @@ func outputSearchList(w io.Writer, results []search.SearchResult) error {
 		if _, err := fmt.Fprintf(w, "   ID: %s\n", result.Note.ID); err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
 		}
-		
+
 		if len(result.Note.Tags) > 0 {
 			if _, err := fmt.Fprintf(w, "   Tags: %s\n", strings.Join(result.Note.Tags, ", ")); err != nil {
 				return fmt.Errorf("failed to write output: %w", err)
 			}
 		}
-		
+
 		if _, err := fmt.Fprintf(w, "   Score: %.2f\n", result.Score); err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
 		}
@@ -238,13 +237,13 @@ func outputSearchDetailed(w io.Writer, results []search.SearchResult) error {
 		if _, err := fmt.Fprintf(w, "Type: %s\n", result.Note.Type); err != nil {
 			return err
 		}
-		
+
 		if len(result.Note.Tags) > 0 {
 			if _, err := fmt.Fprintf(w, "Tags: %s\n", strings.Join(result.Note.Tags, ", ")); err != nil {
 				return err
 			}
 		}
-		
+
 		if _, err := fmt.Fprintf(w, "Score: %.2f\n", result.Score); err != nil {
 			return err
 		}
@@ -254,13 +253,13 @@ func outputSearchDetailed(w io.Writer, results []search.SearchResult) error {
 		if _, err := fmt.Fprintf(w, "Updated: %s\n", result.Note.UpdatedAt.Format("2006-01-02 15:04:05")); err != nil {
 			return err
 		}
-		
+
 		if result.Snippet != "" {
 			if _, err := fmt.Fprintf(w, "\nSnippet:\n%s\n", result.Snippet); err != nil {
 				return err
 			}
 		}
-		
+
 		if len(result.Matches) > 0 {
 			if _, err := fmt.Fprintf(w, "\nMatches:\n"); err != nil {
 				return err
@@ -271,7 +270,7 @@ func outputSearchDetailed(w io.Writer, results []search.SearchResult) error {
 				}
 			}
 		}
-		
+
 		if _, err := fmt.Fprintln(w); err != nil {
 			return err
 		}
@@ -293,4 +292,3 @@ func outputSearchJSON(w io.Writer, results []search.SearchResult) error {
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
 }
-
