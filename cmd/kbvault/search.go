@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/madstone-tech/mdstn-kb-mcp/internal/search"
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage/local"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -56,27 +56,20 @@ Examples:
   # Build/rebuild search index
   kbvault search --build-index`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load configuration
-			cfg, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
+			// Get profile-aware configuration
+			cfg := getConfig()
+			if cfg == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
-			// Find vault root for proper storage initialization
-			vaultRoot, err := findVaultRoot()
-			if err != nil {
-				return fmt.Errorf("not in a kbvault directory: %w", err)
-			}
 
-			// Initialize storage with vault root as base path
-			storageConfig := cfg.Storage.Local
-			storageConfig.Path = vaultRoot // Use vault root instead of relative path
-			storage, err := local.New(storageConfig)
+			// Initialize storage backend
+			storageBackend, err := storage.CreateStorage(cfg.Storage)
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
 			defer func() {
-				if closeErr := storage.Close(); closeErr != nil {
+				if closeErr := storageBackend.Close(); closeErr != nil {
 					// Log error but don't fail the command (ignore write errors)
 					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to close storage: %v\n", closeErr)
 				}
@@ -85,7 +78,7 @@ Examples:
 			// Create search engine
 			searchOpts := search.DefaultOptions()
 			searchOpts.MaxResults = limit
-			engine := search.New(storage, searchOpts)
+			engine := search.New(storageBackend, searchOpts)
 
 			ctx := context.Background()
 
