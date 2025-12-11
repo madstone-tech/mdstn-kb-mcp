@@ -114,21 +114,21 @@ func findNotesToDelete(storage types.StorageBackend, query string) ([]*types.Not
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if len(matches) == 0 {
 			return nil, fmt.Errorf("no notes found matching '%s'", query)
 		}
-		
+
 		if len(matches) == 1 {
 			return matches, nil
 		}
-		
+
 		// Multiple matches - let user choose
 		selected, err := selectFromMultipleNotes(matches, query)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		return []*types.Note{selected}, nil
 	}
 
@@ -143,7 +143,7 @@ func findNotesByPattern(storage types.StorageBackend, pattern string) ([]*types.
 	}
 
 	var matches []*types.Note
-	
+
 	// Convert simple wildcard pattern to Go-compatible
 	// For now, just support suffix matching with *
 	if strings.HasPrefix(pattern, "*") {
@@ -194,11 +194,11 @@ func showDeletionPlan(notes []*types.Note, dryRun bool) error {
 		fmt.Printf("%d. %s\n", i+1, note.Title)
 		fmt.Printf("   ID: %s\n", note.ID)
 		fmt.Printf("   Path: %s\n", note.FilePath)
-		
+
 		if len(note.Frontmatter.Tags) > 0 {
 			fmt.Printf("   Tags: %s\n", strings.Join(note.Frontmatter.Tags, ", "))
 		}
-		
+
 		// Show snippet of content
 		contentLines := strings.Split(note.Content, "\n")
 		var snippet string
@@ -214,7 +214,7 @@ func showDeletionPlan(notes []*types.Note, dryRun bool) error {
 			}
 			fmt.Printf("   Content: %s\n", snippet)
 		}
-		
+
 		fmt.Println()
 	}
 
@@ -226,7 +226,7 @@ func confirmDeletion(notes []*types.Note, interactive bool) bool {
 	if interactive {
 		return confirmInteractive(notes)
 	}
-	
+
 	if len(notes) == 1 {
 		fmt.Printf("Are you sure you want to delete '%s'? (y/N): ", notes[0].Title)
 	} else {
@@ -245,44 +245,44 @@ func confirmDeletion(notes []*types.Note, interactive bool) bool {
 // confirmInteractive asks for confirmation for each note individually
 func confirmInteractive(notes []*types.Note) bool {
 	confirmedNotes := 0
-	
+
 	for i, note := range notes {
 		fmt.Printf("\n--- Note %d of %d ---\n", i+1, len(notes))
 		fmt.Printf("Title: %s\n", note.Title)
 		fmt.Printf("ID: %s\n", note.ID)
 		fmt.Printf("Path: %s\n", note.FilePath)
-		
+
 		fmt.Print("Delete this note? (y/N/q): ")
-		
+
 		var response string
 		if _, err := fmt.Scanln(&response); err != nil {
 			continue
 		}
-		
+
 		response = strings.ToLower(strings.TrimSpace(response))
-		
+
 		if response == "q" || response == "quit" {
 			fmt.Println("Deletion cancelled.")
 			return false
 		}
-		
+
 		if response == "y" || response == "yes" {
 			confirmedNotes++
 		}
 	}
-	
+
 	if confirmedNotes == 0 {
 		fmt.Println("No notes selected for deletion.")
 		return false
 	}
-	
+
 	fmt.Printf("\n%d notes will be deleted. Proceed? (y/N): ", confirmedNotes)
-	
+
 	var response string
 	if _, err := fmt.Scanln(&response); err != nil {
 		return false
 	}
-	
+
 	response = strings.ToLower(strings.TrimSpace(response))
 	return response == "y" || response == "yes"
 }
@@ -294,7 +294,7 @@ func deleteNotes(storage types.StorageBackend, notes []*types.Note) error {
 
 	for _, note := range notes {
 		fmt.Printf("Deleting '%s'...", note.Title)
-		
+
 		if err := storage.Delete(context.TODO(), note.FilePath); err != nil {
 			fmt.Printf(" FAILED: %v\n", err)
 			errors = append(errors, fmt.Sprintf("%s: %v", note.Title, err))

@@ -15,7 +15,7 @@ import (
 
 func TestNew(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	config := types.LocalStorageConfig{
 		Path:          tempDir,
 		CreateDirs:    true,
@@ -38,7 +38,7 @@ func TestNew(t *testing.T) {
 
 func TestNew_Defaults(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	config := types.LocalStorageConfig{
 		Path:          tempDir,
 		CreateDirs:    true,
@@ -67,7 +67,7 @@ func TestNew_Defaults(t *testing.T) {
 func TestStorage_WriteAndRead(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	testData := []byte("Hello, World!")
 	testPath := "test/file.md"
@@ -92,7 +92,7 @@ func TestStorage_WriteAndRead(t *testing.T) {
 func TestStorage_WriteAndReadStream(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	testData := "This is a test file with multiple lines\nLine 2\nLine 3"
 	testPath := "stream/test.md"
@@ -124,7 +124,7 @@ func TestStorage_WriteAndReadStream(t *testing.T) {
 func TestStorage_Delete(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	testPath := "delete/test.md"
 
@@ -162,7 +162,7 @@ func TestStorage_Delete(t *testing.T) {
 func TestStorage_Exists(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 
 	// Test non-existent file
@@ -193,13 +193,13 @@ func TestStorage_Exists(t *testing.T) {
 func TestStorage_List(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 
 	// Create test files
 	testFiles := []string{
 		"list/test1.md",
-		"list/test2.md", 
+		"list/test2.md",
 		"list/test3.txt",
 		"other/file.md",
 	}
@@ -241,7 +241,7 @@ func TestStorage_List(t *testing.T) {
 func TestStorage_Stat(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	testData := []byte("test data for stat")
 	testPath := "stat/test.md"
@@ -280,7 +280,7 @@ func TestStorage_Stat(t *testing.T) {
 func TestStorage_Copy(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	testData := []byte("data to copy")
 	srcPath := "copy/source.md"
@@ -317,7 +317,7 @@ func TestStorage_Copy(t *testing.T) {
 func TestStorage_Move(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	testData := []byte("data to move")
 	srcPath := "move/source.md"
@@ -358,7 +358,7 @@ func TestStorage_Move(t *testing.T) {
 func TestStorage_Health(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 
 	// Health check should pass
@@ -370,7 +370,7 @@ func TestStorage_Health(t *testing.T) {
 
 func TestStorage_Close(t *testing.T) {
 	storage := createTestStorage(t)
-	
+
 	ctx := context.Background()
 
 	// Should work before close
@@ -401,7 +401,7 @@ func TestStorage_Close(t *testing.T) {
 func TestStorage_ConcurrentAccess(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	const numGoroutines = 10
 	const numOperations = 5
@@ -414,23 +414,23 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			for j := 0; j < numOperations; j++ {
 				path := fmt.Sprintf("concurrent/file_%d_%d.md", id, j)
 				data := []byte(fmt.Sprintf("data from goroutine %d, operation %d", id, j))
-				
+
 				if err := storage.Write(ctx, path, data); err != nil {
 					errors <- fmt.Errorf("write error goroutine %d: %w", id, err)
 					return
 				}
-				
+
 				// Verify read
 				readData, err := storage.Read(ctx, path)
 				if err != nil {
 					errors <- fmt.Errorf("read error goroutine %d: %w", id, err)
 					return
 				}
-				
+
 				if string(readData) != string(data) {
 					errors <- fmt.Errorf("data mismatch goroutine %d", id)
 					return
@@ -451,7 +451,7 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 func TestStorage_PathSecurity(t *testing.T) {
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 
 	// Test directory traversal attempts
@@ -480,7 +480,7 @@ func TestStorage_PathSecurity(t *testing.T) {
 func TestStorage_ErrorHandling(t *testing.T) {
 	// Test with non-existent directory and CreateDirs=false
 	tempDir := filepath.Join(t.TempDir(), "nonexistent")
-	
+
 	config := types.LocalStorageConfig{
 		Path:       tempDir,
 		CreateDirs: false, // Don't create directories
@@ -494,10 +494,10 @@ func TestStorage_ErrorHandling(t *testing.T) {
 	// Test read from non-existent file
 	storage := createTestStorage(t)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	_, err = storage.Read(ctx, "nonexistent.md")
-	
+
 	if err == nil {
 		t.Error("Should error when reading non-existent file")
 		return
@@ -518,7 +518,7 @@ func TestStorage_ErrorHandling(t *testing.T) {
 
 func TestStorage_InvalidPermissions(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	config := types.LocalStorageConfig{
 		Path:      tempDir,
 		DirPerms:  "invalid",
@@ -542,7 +542,7 @@ func TestStorage_InvalidPermissions(t *testing.T) {
 // Helper function to create a test storage instance
 func createTestStorage(t *testing.T) *Storage {
 	tempDir := t.TempDir()
-	
+
 	config := types.LocalStorageConfig{
 		Path:          tempDir,
 		CreateDirs:    true,
@@ -564,7 +564,7 @@ func createTestStorage(t *testing.T) *Storage {
 func BenchmarkStorage_Write(b *testing.B) {
 	storage := createBenchStorage(b)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	data := []byte("benchmark test data")
 
@@ -580,7 +580,7 @@ func BenchmarkStorage_Write(b *testing.B) {
 func BenchmarkStorage_Read(b *testing.B) {
 	storage := createBenchStorage(b)
 	defer func() { _ = storage.Close() }() // Ignore close error in test cleanup
-	
+
 	ctx := context.Background()
 	data := []byte("benchmark test data")
 	path := "bench/read_test.md"
@@ -600,7 +600,7 @@ func BenchmarkStorage_Read(b *testing.B) {
 
 func createBenchStorage(b *testing.B) *Storage {
 	tempDir := b.TempDir()
-	
+
 	config := types.LocalStorageConfig{
 		Path:          tempDir,
 		CreateDirs:    true,

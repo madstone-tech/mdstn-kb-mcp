@@ -57,11 +57,11 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-     files:
-       - README.md
-       - LICENSE
-       - CHANGELOG*
-       - completions/*
+    files:
+      - README.md
+      - LICENSE
+      - CHANGELOG*
+      - completions/*
 
 checksum:
   name_template: "checksums.txt"

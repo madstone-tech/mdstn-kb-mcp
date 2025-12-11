@@ -17,12 +17,12 @@ func TestNoneBackend_Type(t *testing.T) {
 func TestNoneBackend_IndexDocument(t *testing.T) {
 	backend := &NoneBackend{}
 	ctx := context.Background()
-	
+
 	doc := &types.Document{
 		ID:      "test-doc",
 		Content: "test content",
 	}
-	
+
 	err := backend.IndexDocument(ctx, doc)
 	assert.NoError(t, err) // Should be no-op
 }
@@ -30,12 +30,12 @@ func TestNoneBackend_IndexDocument(t *testing.T) {
 func TestNoneBackend_IndexDocuments(t *testing.T) {
 	backend := &NoneBackend{}
 	ctx := context.Background()
-	
+
 	docs := []*types.Document{
 		{ID: "doc1", Content: "content1"},
 		{ID: "doc2", Content: "content2"},
 	}
-	
+
 	err := backend.IndexDocuments(ctx, docs)
 	assert.NoError(t, err) // Should be no-op
 }
@@ -43,7 +43,7 @@ func TestNoneBackend_IndexDocuments(t *testing.T) {
 func TestNoneBackend_DeleteDocument(t *testing.T) {
 	backend := &NoneBackend{}
 	ctx := context.Background()
-	
+
 	err := backend.DeleteDocument(ctx, "test-id")
 	assert.NoError(t, err) // Should be no-op
 }
@@ -51,12 +51,12 @@ func TestNoneBackend_DeleteDocument(t *testing.T) {
 func TestNoneBackend_Search(t *testing.T) {
 	backend := &NoneBackend{}
 	ctx := context.Background()
-	
+
 	query := &types.VectorQuery{
 		Query: "test query",
 		Limit: 10,
 	}
-	
+
 	results, err := backend.Search(ctx, query)
 	assert.Error(t, err)
 	assert.Nil(t, results)
@@ -66,7 +66,7 @@ func TestNoneBackend_Search(t *testing.T) {
 func TestNoneBackend_GetEmbedding(t *testing.T) {
 	backend := &NoneBackend{}
 	ctx := context.Background()
-	
+
 	embedding, err := backend.GetEmbedding(ctx, "test text")
 	assert.Error(t, err)
 	assert.Nil(t, embedding)
@@ -76,7 +76,7 @@ func TestNoneBackend_GetEmbedding(t *testing.T) {
 func TestNoneBackend_GetEmbeddings(t *testing.T) {
 	backend := &NoneBackend{}
 	ctx := context.Background()
-	
+
 	texts := []string{"text1", "text2"}
 	embeddings, err := backend.GetEmbeddings(ctx, texts)
 	assert.Error(t, err)
@@ -87,14 +87,14 @@ func TestNoneBackend_GetEmbeddings(t *testing.T) {
 func TestNoneBackend_Health(t *testing.T) {
 	backend := &NoneBackend{}
 	ctx := context.Background()
-	
+
 	err := backend.Health(ctx)
 	assert.NoError(t, err) // Should always be healthy
 }
 
 func TestNoneBackend_Close(t *testing.T) {
 	backend := &NoneBackend{}
-	
+
 	err := backend.Close()
 	assert.NoError(t, err) // Should be no-op
 }

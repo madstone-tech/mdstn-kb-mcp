@@ -162,4 +162,3 @@ func displayNoteJSON(note *types.Note) error {
 
 	return nil
 }
-

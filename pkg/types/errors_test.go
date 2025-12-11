@@ -7,15 +7,15 @@ import (
 
 func TestNewValidationError(t *testing.T) {
 	err := NewInvalidIDError("test-id")
-	
+
 	if err.Type != ErrorTypeValidation {
 		t.Errorf("Expected error type %s, got %s", ErrorTypeValidation, err.Type)
 	}
-	
+
 	if err.Code != "INVALID_ID" {
 		t.Errorf("Expected error code INVALID_ID, got %s", err.Code)
 	}
-	
+
 	if err.Message != "invalid note ID" {
 		t.Errorf("Expected message 'invalid note ID', got %q", err.Message)
 	}
@@ -23,11 +23,11 @@ func TestNewValidationError(t *testing.T) {
 
 func TestNewContentError(t *testing.T) {
 	err := NewInvalidContentError("content too large")
-	
+
 	if err.Type != ErrorTypeValidation {
 		t.Errorf("Expected error type %s, got %s", ErrorTypeValidation, err.Type)
 	}
-	
+
 	if err.Code != "INVALID_CONTENT" {
 		t.Errorf("Expected error code INVALID_CONTENT, got %s", err.Code)
 	}
@@ -65,11 +65,11 @@ func TestNewNotFoundErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.createFn()
-			
+
 			if err.Type != ErrorTypeNotFound {
 				t.Errorf("Expected error type %s, got %s", ErrorTypeNotFound, err.Type)
 			}
-			
+
 			if err.Code != tt.wantCode {
 				t.Errorf("Expected error code %s, got %s", tt.wantCode, err.Code)
 			}
@@ -102,11 +102,11 @@ func TestNewConflictErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.createFn()
-			
+
 			if err.Type != ErrorTypeConflict {
 				t.Errorf("Expected error type %s, got %s", ErrorTypeConflict, err.Type)
 			}
-			
+
 			if err.Code != tt.wantCode {
 				t.Errorf("Expected error code %s, got %s", tt.wantCode, err.Code)
 			}
@@ -120,7 +120,7 @@ func TestKBError_Error(t *testing.T) {
 		Code:    "TEST_ERROR",
 		Message: "test error message",
 	}
-	
+
 	expected := "[validation:TEST_ERROR] test error message"
 	if err.Error() != expected {
 		t.Errorf("Expected error string %q, got %q", expected, err.Error())
@@ -134,7 +134,7 @@ func TestKBError_ErrorWithDetails(t *testing.T) {
 		Message: "test error message",
 		Details: "additional details",
 	}
-	
+
 	expected := "[validation:TEST_ERROR] test error message: additional details"
 	if err.Error() != expected {
 		t.Errorf("Expected error string %q, got %q", expected, err.Error())
@@ -149,7 +149,7 @@ func TestKBError_Unwrap(t *testing.T) {
 		Message: "test error",
 		Cause:   cause,
 	}
-	
+
 	if err.Unwrap() != cause {
 		t.Error("Unwrap should return the underlying cause")
 	}
@@ -161,13 +161,13 @@ func TestKBError_WithContext(t *testing.T) {
 		Code:    "TEST_ERROR",
 		Message: "test error",
 	}
-	
+
 	newErr := err.WithContext("field", "test_field")
-	
+
 	if newErr.Context == nil {
 		t.Error("Context should be set")
 	}
-	
+
 	if newErr.Context["field"] != "test_field" {
 		t.Error("Context field not set correctly")
 	}
@@ -179,10 +179,10 @@ func TestKBError_WithCause(t *testing.T) {
 		Code:    "TEST_ERROR",
 		Message: "test error",
 	}
-	
+
 	cause := errors.New("underlying cause")
 	newErr := err.WithCause(cause)
-	
+
 	if newErr.Cause != cause {
 		t.Error("Cause should be set")
 	}
@@ -193,11 +193,11 @@ func TestKBError_IsType(t *testing.T) {
 		Type: ErrorTypeValidation,
 		Code: "TEST_ERROR",
 	}
-	
+
 	if !err.IsType(ErrorTypeValidation) {
 		t.Error("IsType should return true for matching type")
 	}
-	
+
 	if err.IsType(ErrorTypeNotFound) {
 		t.Error("IsType should return false for non-matching type")
 	}
@@ -245,4 +245,3 @@ func TestErrorTypeCheckers(t *testing.T) {
 		})
 	}
 }
-

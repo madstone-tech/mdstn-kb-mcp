@@ -100,7 +100,7 @@ func TestCreateVaultStructure(t *testing.T) {
 func TestCreateVaultStructureExistingGitignore(t *testing.T) {
 	// Test that existing .gitignore is not overwritten
 	tempDir := t.TempDir()
-	
+
 	existingContent := "# My existing gitignore\nnode_modules/\n"
 	gitignorePath := filepath.Join(tempDir, ".gitignore")
 	err := os.WriteFile(gitignorePath, []byte(existingContent), 0644)
@@ -165,7 +165,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temporary directory
 			tempDir := t.TempDir()
-			
+
 			// Create .kbvault directory
 			kbvaultDir := filepath.Join(tempDir, ".kbvault")
 			err := os.MkdirAll(kbvaultDir, 0755)
@@ -197,13 +197,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 				}
 
 				contentStr := string(content)
-				
+
 				// For empty vault name, expect directory name
 				expectedName := tt.vaultName
 				if expectedName == "" {
 					expectedName = filepath.Base(actualVaultPath)
 				}
-				
+
 				if !strings.Contains(contentStr, `name = "`+expectedName+`"`) {
 					t.Errorf("Config doesn't contain expected vault name: %s", expectedName)
 				}
@@ -223,7 +223,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateDefaultConfigValidation(t *testing.T) {
 	// Test that the created config is valid
 	tempDir := t.TempDir()
-	
+
 	// Create .kbvault directory
 	kbvaultDir := filepath.Join(tempDir, ".kbvault")
 	err := os.MkdirAll(kbvaultDir, 0755)
@@ -239,7 +239,7 @@ func TestCreateDefaultConfigValidation(t *testing.T) {
 
 	// Try to load the config to ensure it's valid
 	configPath := filepath.Join(tempDir, ".kbvault", "config.toml")
-	
+
 	// We can't easily test loading without importing config package
 	// But we can at least verify the file exists and has content
 	content, err := os.ReadFile(configPath)
@@ -256,10 +256,10 @@ func TestCreateDefaultConfigValidation(t *testing.T) {
 func TestCreateDefaultConfigErrorHandling(t *testing.T) {
 	// Test error handling when .kbvault directory doesn't exist
 	tempDir := t.TempDir()
-	
+
 	// Don't create .kbvault directory - this should cause an error
 	// since the config manager tries to write to .kbvault/config.toml
-	
+
 	err := createDefaultConfig(tempDir, "test-vault")
 	// Note: The function may create the directory automatically, so this test
 	// should verify the function handles missing directories gracefully

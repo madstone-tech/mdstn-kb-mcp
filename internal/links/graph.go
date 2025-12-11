@@ -12,13 +12,13 @@ import (
 type Graph struct {
 	// Forward links: source note ID -> target note IDs
 	forward map[string]map[string]bool
-	
+
 	// Backward links: target note ID -> source note IDs
 	backward map[string]map[string]bool
-	
+
 	// Link details: (source, target) -> Link
 	links map[string]map[string]types.Link
-	
+
 	// Note metadata cache
 	notes map[string]*types.NoteMetadata
 }
@@ -50,7 +50,7 @@ func (g *Graph) AddLink(link types.Link) {
 	if g.links[link.SourceID] == nil {
 		g.links[link.SourceID] = make(map[string]types.Link)
 	}
-	
+
 	// Add the link
 	g.forward[link.SourceID][link.TargetID] = true
 	g.backward[link.TargetID][link.SourceID] = true
@@ -65,14 +65,14 @@ func (g *Graph) RemoveLink(sourceID, targetID string) {
 			delete(g.forward, sourceID)
 		}
 	}
-	
+
 	if g.backward[targetID] != nil {
 		delete(g.backward[targetID], sourceID)
 		if len(g.backward[targetID]) == 0 {
 			delete(g.backward, targetID)
 		}
 	}
-	
+
 	if g.links[sourceID] != nil {
 		delete(g.links[sourceID], targetID)
 		if len(g.links[sourceID]) == 0 {
@@ -84,7 +84,7 @@ func (g *Graph) RemoveLink(sourceID, targetID string) {
 // GetOutgoingLinks returns all notes that the given note links to
 func (g *Graph) GetOutgoingLinks(noteID string) []types.Link {
 	var result []types.Link
-	
+
 	if targets, exists := g.forward[noteID]; exists {
 		for targetID := range targets {
 			if link, exists := g.links[noteID][targetID]; exists {
@@ -92,19 +92,19 @@ func (g *Graph) GetOutgoingLinks(noteID string) []types.Link {
 			}
 		}
 	}
-	
+
 	// Sort by position in source note
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Position < result[j].Position
 	})
-	
+
 	return result
 }
 
 // GetIncomingLinks returns all notes that link to the given note (backlinks)
 func (g *Graph) GetIncomingLinks(noteID string) []types.Link {
 	var result []types.Link
-	
+
 	if sources, exists := g.backward[noteID]; exists {
 		for sourceID := range sources {
 			if link, exists := g.links[sourceID][noteID]; exists {
@@ -112,7 +112,7 @@ func (g *Graph) GetIncomingLinks(noteID string) []types.Link {
 			}
 		}
 	}
-	
+
 	// Sort by source note title
 	sort.Slice(result, func(i, j int) bool {
 		sourceA := g.notes[result[i].SourceID]
@@ -122,33 +122,33 @@ func (g *Graph) GetIncomingLinks(noteID string) []types.Link {
 		}
 		return result[i].SourceID < result[j].SourceID
 	})
-	
+
 	return result
 }
 
 // GetConnectedNotes returns all notes connected to the given note
 func (g *Graph) GetConnectedNotes(noteID string) []string {
 	connected := make(map[string]bool)
-	
+
 	// Add outgoing links
 	if targets, exists := g.forward[noteID]; exists {
 		for targetID := range targets {
 			connected[targetID] = true
 		}
 	}
-	
+
 	// Add incoming links
 	if sources, exists := g.backward[noteID]; exists {
 		for sourceID := range sources {
 			connected[sourceID] = true
 		}
 	}
-	
+
 	var result []string
 	for id := range connected {
 		result = append(result, id)
 	}
-	
+
 	sort.Strings(result)
 	return result
 }
@@ -156,16 +156,16 @@ func (g *Graph) GetConnectedNotes(noteID string) []string {
 // GetOrphanNotes returns notes with no incoming or outgoing links
 func (g *Graph) GetOrphanNotes() []string {
 	var orphans []string
-	
+
 	for noteID := range g.notes {
 		hasOutgoing := len(g.forward[noteID]) > 0
 		hasIncoming := len(g.backward[noteID]) > 0
-		
+
 		if !hasOutgoing && !hasIncoming {
 			orphans = append(orphans, noteID)
 		}
 	}
-	
+
 	sort.Strings(orphans)
 	return orphans
 }
@@ -176,7 +176,7 @@ func (g *Graph) GetMostLinkedNotes(limit int) []NoteRank {
 		noteID string
 		count  int
 	}
-	
+
 	var counts []noteCount
 	for noteID, sources := range g.backward {
 		counts = append(counts, noteCount{
@@ -184,19 +184,19 @@ func (g *Graph) GetMostLinkedNotes(limit int) []NoteRank {
 			count:  len(sources),
 		})
 	}
-	
+
 	// Sort by count descending
 	sort.Slice(counts, func(i, j int) bool {
 		return counts[i].count > counts[j].count
 	})
-	
+
 	// Convert to NoteRank and apply limit
 	var result []NoteRank
 	for i, nc := range counts {
 		if limit > 0 && i >= limit {
 			break
 		}
-		
+
 		note := g.notes[nc.noteID]
 		rank := NoteRank{
 			NoteID: nc.noteID,
@@ -205,10 +205,10 @@ func (g *Graph) GetMostLinkedNotes(limit int) []NoteRank {
 		if note != nil {
 			rank.Title = note.Title
 		}
-		
+
 		result = append(result, rank)
 	}
-	
+
 	return result
 }
 
@@ -218,13 +218,13 @@ func (g *Graph) GetMostConnectedNotes(limit int) []NoteRank {
 		noteID string
 		count  int
 	}
-	
+
 	var counts []noteCount
 	for noteID := range g.notes {
 		outgoing := len(g.forward[noteID])
 		incoming := len(g.backward[noteID])
 		total := outgoing + incoming
-		
+
 		if total > 0 {
 			counts = append(counts, noteCount{
 				noteID: noteID,
@@ -232,19 +232,19 @@ func (g *Graph) GetMostConnectedNotes(limit int) []NoteRank {
 			})
 		}
 	}
-	
+
 	// Sort by count descending
 	sort.Slice(counts, func(i, j int) bool {
 		return counts[i].count > counts[j].count
 	})
-	
+
 	// Convert to NoteRank and apply limit
 	var result []NoteRank
 	for i, nc := range counts {
 		if limit > 0 && i >= limit {
 			break
 		}
-		
+
 		note := g.notes[nc.noteID]
 		rank := NoteRank{
 			NoteID: nc.noteID,
@@ -253,10 +253,10 @@ func (g *Graph) GetMostConnectedNotes(limit int) []NoteRank {
 		if note != nil {
 			rank.Title = note.Title
 		}
-		
+
 		result = append(result, rank)
 	}
-	
+
 	return result
 }
 
@@ -265,18 +265,18 @@ func (g *Graph) FindPath(sourceID, targetID string) []string {
 	if sourceID == targetID {
 		return []string{sourceID}
 	}
-	
+
 	// BFS to find shortest path
 	queue := [][]string{{sourceID}}
 	visited := make(map[string]bool)
 	visited[sourceID] = true
-	
+
 	for len(queue) > 0 {
 		path := queue[0]
 		queue = queue[1:]
-		
+
 		currentID := path[len(path)-1]
-		
+
 		// Check all outgoing links from current note
 		if targets, exists := g.forward[currentID]; exists {
 			for nextID := range targets {
@@ -284,7 +284,7 @@ func (g *Graph) FindPath(sourceID, targetID string) []string {
 					// Found target
 					return append(path, nextID)
 				}
-				
+
 				if !visited[nextID] {
 					visited[nextID] = true
 					newPath := make([]string, len(path)+1)
@@ -295,7 +295,7 @@ func (g *Graph) FindPath(sourceID, targetID string) []string {
 			}
 		}
 	}
-	
+
 	// No path found
 	return nil
 }
@@ -307,12 +307,12 @@ func (g *Graph) GetStatistics() *GraphStatistics {
 		TotalLinks:  0,
 		OrphanNotes: len(g.GetOrphanNotes()),
 	}
-	
+
 	// Count total links
 	for _, targets := range g.forward {
 		stats.TotalLinks += len(targets)
 	}
-	
+
 	// Calculate average connections per note
 	if stats.TotalNotes > 0 {
 		totalConnections := 0
@@ -323,7 +323,7 @@ func (g *Graph) GetStatistics() *GraphStatistics {
 		}
 		stats.AvgConnectionsPerNote = float64(totalConnections) / float64(stats.TotalNotes)
 	}
-	
+
 	return stats
 }
 
@@ -336,16 +336,16 @@ type NoteRank struct {
 
 // GraphStatistics contains graph analysis results
 type GraphStatistics struct {
-	TotalNotes             int     `json:"total_notes"`
-	TotalLinks             int     `json:"total_links"`
-	OrphanNotes            int     `json:"orphan_notes"`
-	AvgConnectionsPerNote  float64 `json:"avg_connections_per_note"`
+	TotalNotes            int     `json:"total_notes"`
+	TotalLinks            int     `json:"total_links"`
+	OrphanNotes           int     `json:"orphan_notes"`
+	AvgConnectionsPerNote float64 `json:"avg_connections_per_note"`
 }
 
 // Builder helps construct a graph from a collection of notes
 type Builder struct {
-	parser   *Parser
-	graph    *Graph
+	parser *Parser
+	graph  *Graph
 }
 
 // NewBuilder creates a new graph builder
@@ -363,19 +363,19 @@ func (b *Builder) BuildFromNotes(ctx context.Context, notes []*types.Note) (*Gra
 		metadata := note.ToMetadata()
 		b.graph.AddNote(&metadata)
 	}
-	
+
 	// Second pass: parse and add links
 	for _, note := range notes {
 		links, err := b.parser.ParseLinks(note)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse links for note %s: %w", note.ID, err)
 		}
-		
+
 		for _, link := range links {
 			b.graph.AddLink(link)
 		}
 	}
-	
+
 	return b.graph, nil
 }
 

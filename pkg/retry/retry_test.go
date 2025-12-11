@@ -35,10 +35,10 @@ func TestExponentialBackoff_Duration(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("attempt_%d", tc.attempt), func(t *testing.T) {
 			duration := backoff.Duration(tc.attempt)
-			
+
 			// Check if duration is within expected range (accounting for jitter)
 			if duration < tc.expected-tc.maxDelta || duration > tc.expected+tc.maxDelta {
-				t.Errorf("Duration for attempt %d: expected %v ± %v, got %v", 
+				t.Errorf("Duration for attempt %d: expected %v ± %v, got %v",
 					tc.attempt, tc.expected, tc.maxDelta, duration)
 			}
 		})
@@ -145,7 +145,7 @@ func TestRetry_NonRetryableError(t *testing.T) {
 
 	attempts := 0
 	nonRetryableErr := types.NewStorageError(types.StorageTypeLocal, "read", "test", errors.New("not found"), false)
-	
+
 	err := Retry(ctx, config, func() error {
 		attempts++
 		return nonRetryableErr
@@ -167,7 +167,7 @@ func TestRetry_ContextCancellation(t *testing.T) {
 	config.Backoff = NewExponentialBackoff(100*time.Millisecond, 1*time.Second)
 
 	attempts := 0
-	
+
 	// Cancel context after first attempt
 	go func() {
 		time.Sleep(50 * time.Millisecond)

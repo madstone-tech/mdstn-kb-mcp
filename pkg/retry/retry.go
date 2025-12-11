@@ -252,7 +252,7 @@ func (cb *CircuitBreaker) Execute(fn func() error) error {
 	}
 
 	err := fn()
-	
+
 	if err != nil {
 		cb.recordFailure()
 	} else {
@@ -296,9 +296,9 @@ func (cb *CircuitBreaker) Reset() {
 
 // StorageRetryWrapper wraps a storage backend with retry logic
 type StorageRetryWrapper struct {
-	backend  types.StorageBackend
-	config   *Config
-	breaker  *CircuitBreaker
+	backend types.StorageBackend
+	config  *Config
+	breaker *CircuitBreaker
 }
 
 // NewStorageRetryWrapper creates a new storage wrapper with retry logic

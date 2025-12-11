@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
+	"github.com/spf13/cobra"
 )
 
 func newConfigureCmd() *cobra.Command {
@@ -37,7 +37,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&profileName, "profile", "", 
+	cmd.Flags().StringVar(&profileName, "profile", "",
 		"Profile name to configure (creates new if doesn't exist, default: active profile)")
 
 	return cmd
@@ -139,19 +139,19 @@ func runConfigure(profileName string) error {
 
 func configureVault(scanner *bufio.Scanner, config *types.Config) error {
 	fmt.Println("Vault Configuration:")
-	
+
 	// Vault name
 	config.Vault.Name = promptWithDefault(scanner, "Vault name", config.Vault.Name)
-	
+
 	// Notes directory
 	config.Vault.NotesDir = promptWithDefault(scanner, "Notes directory", config.Vault.NotesDir)
-	
+
 	// Daily notes directory
 	config.Vault.DailyDir = promptWithDefault(scanner, "Daily notes directory", config.Vault.DailyDir)
-	
+
 	// Templates directory
 	config.Vault.TemplatesDir = promptWithDefault(scanner, "Templates directory", config.Vault.TemplatesDir)
-	
+
 	// Default template
 	config.Vault.DefaultTemplate = promptWithDefault(scanner, "Default template", config.Vault.DefaultTemplate)
 
@@ -161,7 +161,7 @@ func configureVault(scanner *bufio.Scanner, config *types.Config) error {
 
 func configureStorage(scanner *bufio.Scanner, config *types.Config) error {
 	fmt.Println("Storage Configuration:")
-	
+
 	// Storage type
 	currentType := string(config.Storage.Type)
 	for {
@@ -186,14 +186,14 @@ func configureStorage(scanner *bufio.Scanner, config *types.Config) error {
 
 func configureLocalStorage(scanner *bufio.Scanner, config *types.Config) error {
 	fmt.Println("\nLocal Storage Settings:")
-	
+
 	// Path
 	config.Storage.Local.Path = promptWithDefault(scanner, "Vault path", config.Storage.Local.Path)
-	
+
 	// Create directories
 	createDirs := promptBoolWithDefault(scanner, "Create directories automatically", config.Storage.Local.CreateDirs)
 	config.Storage.Local.CreateDirs = createDirs
-	
+
 	// Enable locking
 	enableLocking := promptBoolWithDefault(scanner, "Enable file locking", config.Storage.Local.EnableLocking)
 	config.Storage.Local.EnableLocking = enableLocking
@@ -204,18 +204,18 @@ func configureLocalStorage(scanner *bufio.Scanner, config *types.Config) error {
 
 func configureS3Storage(scanner *bufio.Scanner, config *types.Config) error {
 	fmt.Println("\nS3 Storage Settings:")
-	
+
 	// Bucket
 	config.Storage.S3.Bucket = promptWithDefault(scanner, "S3 bucket name", config.Storage.S3.Bucket)
-	
+
 	// Region
 	config.Storage.S3.Region = promptWithDefault(scanner, "S3 region", config.Storage.S3.Region)
-	
+
 	// Endpoint (optional)
 	if confirmPrompt(scanner, "Use custom S3 endpoint? (y/N)") {
 		config.Storage.S3.Endpoint = promptWithDefault(scanner, "S3 endpoint URL", config.Storage.S3.Endpoint)
 	}
-	
+
 	// Prefix (optional)
 	if confirmPrompt(scanner, "Use S3 key prefix? (y/N)") {
 		config.Storage.S3.Prefix = promptWithDefault(scanner, "S3 key prefix", config.Storage.S3.Prefix)
@@ -237,12 +237,12 @@ func configureS3Storage(scanner *bufio.Scanner, config *types.Config) error {
 
 func configureS3Encryption(scanner *bufio.Scanner, config *types.Config) error {
 	fmt.Println("\nS3 Encryption Settings:")
-	
+
 	// Encryption type
 	fmt.Println("Server-side encryption options:")
 	fmt.Println("  1. AES256")
 	fmt.Println("  2. aws:kms")
-	
+
 	for {
 		choice := promptWithDefault(scanner, "Encryption type (1/2)", "1")
 		switch choice {
@@ -265,18 +265,18 @@ func configureS3Encryption(scanner *bufio.Scanner, config *types.Config) error {
 func configureAWSCredentials(scanner *bufio.Scanner, config *types.Config) error {
 	fmt.Println("\nAWS Credentials:")
 	fmt.Println("Note: It's recommended to use AWS credential files or IAM roles instead of hardcoding credentials.")
-	
+
 	if !confirmPrompt(scanner, "Store credentials in profile configuration? (y/N)") {
 		fmt.Println("AWS credentials will be loaded from the standard credential chain (environment, files, IAM roles).")
 		return nil
 	}
-	
+
 	// Access Key ID
 	config.Storage.S3.AccessKeyID = promptWithDefault(scanner, "AWS Access Key ID", config.Storage.S3.AccessKeyID)
-	
+
 	// Secret Access Key
 	config.Storage.S3.SecretAccessKey = promptSensitive(scanner, "AWS Secret Access Key")
-	
+
 	// Session Token (optional)
 	if confirmPrompt(scanner, "Using temporary credentials with session token? (y/N)") {
 		config.Storage.S3.SessionToken = promptSensitive(scanner, "AWS Session Token")
@@ -288,24 +288,24 @@ func configureAWSCredentials(scanner *bufio.Scanner, config *types.Config) error
 
 func configureServer(scanner *bufio.Scanner, config *types.Config) error {
 	fmt.Println("\nHTTP Server Configuration:")
-	
+
 	// Enable server
 	enabled := promptBoolWithDefault(scanner, "Enable HTTP server", config.Server.HTTP.Enabled)
 	config.Server.HTTP.Enabled = enabled
-	
+
 	if !enabled {
 		return nil
 	}
-	
+
 	// Host
 	config.Server.HTTP.Host = promptWithDefault(scanner, "Server host", config.Server.HTTP.Host)
-	
+
 	// Port
 	portStr := promptWithDefault(scanner, "Server port", fmt.Sprintf("%d", config.Server.HTTP.Port))
 	if port, err := strconv.Atoi(portStr); err == nil {
 		config.Server.HTTP.Port = port
 	}
-	
+
 	// CORS
 	enableCORS := promptBoolWithDefault(scanner, "Enable CORS", config.Server.HTTP.EnableCORS)
 	config.Server.HTTP.EnableCORS = enableCORS
@@ -321,7 +321,7 @@ func profileExists(pm *config.ProfileManager, name string) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	for _, p := range profiles {
 		if p.Name == name {
 			return true
@@ -336,10 +336,10 @@ func promptWithDefault(scanner *bufio.Scanner, prompt, defaultValue string) stri
 	} else {
 		fmt.Printf("%s: ", prompt)
 	}
-	
+
 	scanner.Scan()
 	input := strings.TrimSpace(scanner.Text())
-	
+
 	if input == "" {
 		return defaultValue
 	}
@@ -357,16 +357,16 @@ func promptBoolWithDefault(scanner *bufio.Scanner, prompt string, defaultValue b
 	if defaultValue {
 		defaultStr = "Y"
 	}
-	
+
 	for {
 		fmt.Printf("%s (y/N) [%s]: ", prompt, defaultStr)
 		scanner.Scan()
 		input := strings.ToLower(strings.TrimSpace(scanner.Text()))
-		
+
 		if input == "" {
 			return defaultValue
 		}
-		
+
 		switch input {
 		case "y", "yes":
 			return true

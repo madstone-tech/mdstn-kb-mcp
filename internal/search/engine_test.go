@@ -107,7 +107,7 @@ func (m *mockStorage) Close() error {
 func TestEngine_Search(t *testing.T) {
 	storage := newMockStorage()
 	engine := New(storage, DefaultOptions())
-	
+
 	// Add test documents
 	docs := []*IndexedDocument{
 		{
@@ -138,12 +138,12 @@ func TestEngine_Search(t *testing.T) {
 			UpdatedAt: time.Now().Add(-6 * time.Hour),
 		},
 	}
-	
+
 	// Build index
 	for _, doc := range docs {
 		engine.index.Add(doc)
 	}
-	
+
 	tests := []struct {
 		name     string
 		query    SearchQuery
@@ -221,13 +221,13 @@ func TestEngine_Search(t *testing.T) {
 			},
 		},
 	}
-	
+
 	ctx := context.Background()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			results, err := engine.Search(ctx, tt.query)
 			require.NoError(t, err)
-			
+
 			if tt.validate != nil {
 				tt.validate(t, results)
 			} else {
@@ -240,27 +240,27 @@ func TestEngine_Search(t *testing.T) {
 func TestEngine_BuildIndex(t *testing.T) {
 	storage := newMockStorage()
 	engine := New(storage, DefaultOptions())
-	
+
 	// Add test files
 	testFiles := map[string]string{
 		"note1.md": "# Test Note 1\n\nThis is a test note about Go programming.",
 		"note2.md": "# Test Note 2\n\nAnother note about Python development.",
 		"note3.md": "# Test Note 3\n\nA third note about JavaScript.",
 	}
-	
+
 	for path, content := range testFiles {
 		err := storage.Write(context.Background(), path, []byte(content))
 		require.NoError(t, err)
 	}
-	
+
 	// Build index
 	ctx := context.Background()
 	err := engine.BuildIndex(ctx)
 	require.NoError(t, err)
-	
+
 	// Verify index was built
 	assert.Equal(t, 3, engine.index.Size())
-	
+
 	// Test search after building index
 	results, err := engine.Search(ctx, SearchQuery{Query: "programming"})
 	require.NoError(t, err)
@@ -270,7 +270,7 @@ func TestEngine_BuildIndex(t *testing.T) {
 func TestEngine_IndexNote(t *testing.T) {
 	storage := newMockStorage()
 	engine := New(storage, DefaultOptions())
-	
+
 	note := &types.Note{
 		ID:      "test-123",
 		Title:   "Test Note",
@@ -282,11 +282,11 @@ func TestEngine_IndexNote(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	ctx := context.Background()
 	err := engine.IndexNote(ctx, note)
 	require.NoError(t, err)
-	
+
 	// Verify note was indexed
 	results, err := engine.Search(ctx, SearchQuery{Query: "test"})
 	require.NoError(t, err)
@@ -297,7 +297,7 @@ func TestEngine_IndexNote(t *testing.T) {
 func TestEngine_RemoveFromIndex(t *testing.T) {
 	storage := newMockStorage()
 	engine := New(storage, DefaultOptions())
-	
+
 	// Add a document
 	doc := &IndexedDocument{
 		ID:      "remove-test",
@@ -305,17 +305,17 @@ func TestEngine_RemoveFromIndex(t *testing.T) {
 		Content: "This document will be removed",
 	}
 	engine.index.Add(doc)
-	
+
 	// Verify it's indexed
 	ctx := context.Background()
 	results, err := engine.Search(ctx, SearchQuery{Query: "remove"})
 	require.NoError(t, err)
 	assert.Len(t, results, 1)
-	
+
 	// Remove from index
 	err = engine.RemoveFromIndex(ctx, "remove-test")
 	require.NoError(t, err)
-	
+
 	// Verify it's gone
 	results, err = engine.Search(ctx, SearchQuery{Query: "remove"})
 	require.NoError(t, err)

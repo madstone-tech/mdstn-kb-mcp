@@ -17,11 +17,11 @@ func TestFactory_CreateVectorSearch(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		name      string
-		config    types.VectorSearchConfig
-		wantType  types.VectorSearchType
-		wantErr   bool
-		errMsg    string
+		name     string
+		config   types.VectorSearchConfig
+		wantType types.VectorSearchType
+		wantErr  bool
+		errMsg   string
 	}{
 		{
 			name: "disabled vector search",
@@ -175,7 +175,7 @@ func TestFactory_ValidateConfig(t *testing.T) {
 func TestFactory_GetSupportedTypes(t *testing.T) {
 	factory := NewFactory()
 	supportedTypes := factory.GetSupportedTypes()
-	
+
 	assert.Contains(t, supportedTypes, types.VectorSearchTypeNone)
 	assert.Contains(t, supportedTypes, types.VectorSearchTypeLocal)
 	assert.Contains(t, supportedTypes, types.VectorSearchTypePinecone)
@@ -187,7 +187,7 @@ func TestFactory_GetSupportedTypes(t *testing.T) {
 func TestFactory_GetSupportedEmbeddingProviders(t *testing.T) {
 	factory := NewFactory()
 	providers := factory.GetSupportedEmbeddingProviders()
-	
+
 	assert.Contains(t, providers, types.EmbeddingProviderNone)
 	assert.Contains(t, providers, types.EmbeddingProviderOpenAI)
 	assert.Contains(t, providers, types.EmbeddingProviderAzure)
@@ -363,7 +363,7 @@ func TestPackageFunctions(t *testing.T) {
 
 func TestContains(t *testing.T) {
 	slice := []string{"a", "b", "c"}
-	
+
 	assert.True(t, contains(slice, "a"))
 	assert.True(t, contains(slice, "b"))
 	assert.True(t, contains(slice, "c"))

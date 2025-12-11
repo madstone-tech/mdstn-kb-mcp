@@ -16,7 +16,7 @@ func TestLoadTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create templates directory: %v", err)
 	}
-	
+
 	// Create a test template
 	testTemplate := `# {{.Title}}
 
@@ -37,7 +37,7 @@ Content goes here...`
 		t.Fatalf("Failed to get current directory: %v", err)
 	}
 	defer func() { _ = os.Chdir(oldWd) }()
-	
+
 	err = os.Chdir(tempDir)
 	if err != nil {
 		t.Fatalf("Failed to change directory: %v", err)
@@ -64,9 +64,9 @@ Content goes here...`
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a simple config for testing
 			config := &types.Config{}
-			
+
 			result, err := loadTemplate(config, tt.templateName)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("loadTemplate() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -122,7 +122,7 @@ func TestOpenInEditor(t *testing.T) {
 			}()
 
 			err := openInEditor(tt.filePath)
-			
+
 			// For echo command, it should succeed regardless of file existence
 			// since echo just prints its arguments
 			if tt.editor == "echo" && err != nil {
@@ -164,17 +164,17 @@ func TestOpenInEditorDefaultEditor(t *testing.T) {
 func TestFindVaultRoot(t *testing.T) {
 	// Create a temporary directory structure
 	tempDir := t.TempDir()
-	
+
 	// Create a vault structure
 	vaultDir := filepath.Join(tempDir, "test-vault")
 	kbvaultDir := filepath.Join(vaultDir, ".kbvault")
 	subDir := filepath.Join(vaultDir, "subdir")
-	
+
 	err := os.MkdirAll(kbvaultDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create .kbvault directory: %v", err)
 	}
-	
+
 	err = os.MkdirAll(subDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create subdirectory: %v", err)
@@ -254,7 +254,7 @@ func TestLoadConfig(t *testing.T) {
 	tempDir := t.TempDir()
 	vaultDir := filepath.Join(tempDir, "test-vault")
 	kbvaultDir := filepath.Join(vaultDir, ".kbvault")
-	
+
 	err := os.MkdirAll(kbvaultDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create .kbvault directory: %v", err)
@@ -307,7 +307,7 @@ output = "stdout"
 func TestLoadConfigNotInVault(t *testing.T) {
 	// Change to a directory that's not a vault
 	tempDir := t.TempDir()
-	
+
 	oldWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get current directory: %v", err)

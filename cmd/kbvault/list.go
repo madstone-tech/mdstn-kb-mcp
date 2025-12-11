@@ -253,7 +253,7 @@ func formatTagsJSON(tags []string) string {
 	if len(tags) == 0 {
 		return ""
 	}
-	
+
 	quotedTags := make([]string, len(tags))
 	for i, tag := range tags {
 		quotedTags[i] = fmt.Sprintf(`"%s"`, tag)

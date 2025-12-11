@@ -195,11 +195,11 @@ func TestSortNotes(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		notes      []*types.Note
-		sortBy     string
-		reverse    bool
-		wantOrder  []string // Expected order of note IDs
+		name      string
+		notes     []*types.Note
+		sortBy    string
+		reverse   bool
+		wantOrder []string // Expected order of note IDs
 	}{
 		{
 			name:      "sort_by_title",
