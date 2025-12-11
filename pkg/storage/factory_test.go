@@ -17,6 +17,9 @@ func TestNewFactory(t *testing.T) {
 func TestFactory_CreateStorage(t *testing.T) {
 	factory := NewFactory()
 
+	// Create temporary directory for local storage test
+	tmpDir := t.TempDir()
+
 	tests := []struct {
 		name    string
 		config  types.StorageConfig
@@ -28,7 +31,7 @@ func TestFactory_CreateStorage(t *testing.T) {
 			config: types.StorageConfig{
 				Type: types.StorageTypeLocal,
 				Local: types.LocalStorageConfig{
-					Path: "/tmp/test-vault",
+					Path: tmpDir,
 				},
 			},
 			wantErr: false,
@@ -188,7 +191,7 @@ func TestFactory_ValidateConfig(t *testing.T) {
 func TestFactory_GetSupportedTypes(t *testing.T) {
 	factory := NewFactory()
 	supportedTypes := factory.GetSupportedTypes()
-	
+
 	assert.Contains(t, supportedTypes, types.StorageTypeLocal)
 	assert.Contains(t, supportedTypes, types.StorageTypeS3)
 	assert.Len(t, supportedTypes, 2)
@@ -199,11 +202,14 @@ func TestDefaultFactory(t *testing.T) {
 }
 
 func TestPackageFunctions(t *testing.T) {
+	// Create temporary directory for local storage test
+	tmpDir := t.TempDir()
+
 	// Test that package-level functions work
 	config := types.StorageConfig{
 		Type: types.StorageTypeLocal,
 		Local: types.LocalStorageConfig{
-			Path: "/tmp/test-vault",
+			Path: tmpDir,
 		},
 	}
 

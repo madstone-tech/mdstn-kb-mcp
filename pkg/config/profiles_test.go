@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -90,7 +91,7 @@ func TestProfileManager_CreateProfile(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				
+
 				// Verify profile was created
 				profiles, err := pm.ListProfiles()
 				assert.NoError(t, err)
@@ -528,10 +529,10 @@ func TestProfileManager_ExportImportProfile(t *testing.T) {
 
 func TestValidateProfileName(t *testing.T) {
 	tests := []struct {
-		name     string
-		profile  string
-		wantErr  bool
-		errMsg   string
+		name    string
+		profile string
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name:    "valid name",
@@ -586,13 +587,19 @@ func TestValidateProfileName(t *testing.T) {
 func setupTestProfileManager(t *testing.T) *ProfileManager {
 	// Create a temporary directory for testing
 	tmpDir := t.TempDir()
-	
+
+	// Create directories
+	globalConfigDir := filepath.Join(tmpDir, ".kbvault")
+	profilesConfigDir := filepath.Join(globalConfigDir, "profiles")
+	require.NoError(t, os.MkdirAll(profilesConfigDir, 0755))
+
 	// Create a ViperManager with temporary directories
 	vm := &ViperManager{
+		global:            viper.New(),
 		profiles:          make(map[string]*viper.Viper),
 		activeProfile:     "default",
-		globalConfigDir:   filepath.Join(tmpDir, ".kbvault"),
-		profilesConfigDir: filepath.Join(tmpDir, ".kbvault", "profiles"),
+		globalConfigDir:   globalConfigDir,
+		profilesConfigDir: profilesConfigDir,
 	}
 
 	// Initialize global config
@@ -607,7 +614,7 @@ func setupTestProfileManager(t *testing.T) *ProfileManager {
 // Benchmark tests
 func BenchmarkProfileManager_ListProfiles(b *testing.B) {
 	pm := setupBenchmarkProfileManager(b)
-	
+
 	// Create some profiles
 	for i := 0; i < 10; i++ {
 		err := pm.CreateProfile(fmt.Sprintf("bench-%d", i), nil)
@@ -634,7 +641,7 @@ func BenchmarkProfileManager_CreateProfile(b *testing.B) {
 
 func setupBenchmarkProfileManager(b *testing.B) *ProfileManager {
 	tmpDir := b.TempDir()
-	
+
 	vm := &ViperManager{
 		profiles:          make(map[string]*viper.Viper),
 		activeProfile:     "default",

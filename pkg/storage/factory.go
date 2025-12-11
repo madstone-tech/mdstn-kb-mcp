@@ -18,6 +18,11 @@ func NewFactory() *Factory {
 
 // CreateStorage creates a storage backend based on the provided configuration
 func (f *Factory) CreateStorage(config types.StorageConfig) (types.StorageBackend, error) {
+	// Validate configuration first
+	if err := f.ValidateConfig(config); err != nil {
+		return nil, err
+	}
+
 	switch config.Type {
 	case types.StorageTypeLocal:
 		return local.New(config.Local)

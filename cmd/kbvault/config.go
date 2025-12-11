@@ -131,10 +131,20 @@ func newConfigPathCmd() *cobra.Command {
 		Short: "Show configuration file path",
 		Long:  `Show the path to the current configuration file.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Show profile configuration path
 			currentProfile := getProfile()
 			
-			// Construct profile path (same pattern as viper manager)
+			// Check if we're using local vault configuration
+			if currentProfile == "local" {
+				// Find local vault config path
+				vaultRoot, err := findVaultRoot()
+				if err == nil {
+					configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
+					fmt.Println(configPath)
+					return nil
+				}
+			}
+			
+			// Show profile configuration path
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("failed to get user home directory: %w", err)
