@@ -163,6 +163,12 @@ func tryLoadLocalConfig() *types.Config {
 		return nil
 	}
 
+	// Resolve relative paths in storage config to be relative to vault root
+	// This ensures kbvault works correctly from any working directory
+	if cfg.Storage.Local.Path != "" && !filepath.IsAbs(cfg.Storage.Local.Path) {
+		cfg.Storage.Local.Path = filepath.Join(vaultRoot, cfg.Storage.Local.Path)
+	}
+
 	return cfg
 }
 
