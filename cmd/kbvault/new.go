@@ -158,6 +158,9 @@ func openInEditor(filePath string) error {
 	fmt.Printf("Opening in editor: %s %s\n", editor, filePath)
 
 	cmd := exec.Command(editor, filePath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
