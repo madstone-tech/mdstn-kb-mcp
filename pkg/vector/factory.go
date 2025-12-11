@@ -92,22 +92,22 @@ func validateLocalConfig(config types.LocalVectorConfig) error {
 	if config.DatabasePath == "" {
 		return fmt.Errorf("local vector database path cannot be empty")
 	}
-	
+
 	validEngines := []string{"sqlite", "duckdb"}
 	if !contains(validEngines, config.Engine) {
 		return fmt.Errorf("unsupported local vector engine: %s (supported: %v)", config.Engine, validEngines)
 	}
-	
+
 	validIndexTypes := []string{"flat", "ivf", "hnsw"}
 	if !contains(validIndexTypes, config.IndexType) {
 		return fmt.Errorf("unsupported index type: %s (supported: %v)", config.IndexType, validIndexTypes)
 	}
-	
+
 	validMetrics := []string{"cosine", "euclidean", "dot"}
 	if !contains(validMetrics, config.DistanceMetric) {
 		return fmt.Errorf("unsupported distance metric: %s (supported: %v)", config.DistanceMetric, validMetrics)
 	}
-	
+
 	return nil
 }
 
@@ -126,39 +126,39 @@ func validatePineconeConfig(config types.PineconeConfig) error {
 
 func validateWeaviateConfig(config types.WeaviateConfig) error {
 	if config.Host == "" {
-		return fmt.Errorf("Weaviate host cannot be empty")
+		return fmt.Errorf("weaviate host cannot be empty")
 	}
 	if config.Port <= 0 || config.Port > 65535 {
-		return fmt.Errorf("Weaviate port must be between 1 and 65535")
+		return fmt.Errorf("weaviate port must be between 1 and 65535")
 	}
 	if config.ClassName == "" {
-		return fmt.Errorf("Weaviate class name cannot be empty")
+		return fmt.Errorf("weaviate class name cannot be empty")
 	}
 	return nil
 }
 
 func validateChromaConfig(config types.ChromaConfig) error {
 	if config.Host == "" {
-		return fmt.Errorf("Chroma host cannot be empty")
+		return fmt.Errorf("chroma host cannot be empty")
 	}
 	if config.Port <= 0 || config.Port > 65535 {
-		return fmt.Errorf("Chroma port must be between 1 and 65535")
+		return fmt.Errorf("chroma port must be between 1 and 65535")
 	}
 	if config.CollectionName == "" {
-		return fmt.Errorf("Chroma collection name cannot be empty")
+		return fmt.Errorf("chroma collection name cannot be empty")
 	}
 	return nil
 }
 
 func validateQdrantConfig(config types.QdrantConfig) error {
 	if config.Host == "" {
-		return fmt.Errorf("Qdrant host cannot be empty")
+		return fmt.Errorf("qdrant host cannot be empty")
 	}
 	if config.Port <= 0 || config.Port > 65535 {
-		return fmt.Errorf("Qdrant port must be between 1 and 65535")
+		return fmt.Errorf("qdrant port must be between 1 and 65535")
 	}
 	if config.CollectionName == "" {
-		return fmt.Errorf("Qdrant collection name cannot be empty")
+		return fmt.Errorf("qdrant collection name cannot be empty")
 	}
 	return nil
 }
@@ -189,25 +189,25 @@ func NewLocalBackend(config types.VectorSearchConfig) (types.VectorSearchBackend
 // NewPineconeBackend creates a Pinecone vector search backend
 func NewPineconeBackend(config types.VectorSearchConfig) (types.VectorSearchBackend, error) {
 	// TODO: Implement in Session 6
-	return nil, fmt.Errorf("Pinecone vector search backend not yet implemented")
+	return nil, fmt.Errorf("pinecone vector search backend not yet implemented")
 }
 
 // NewWeaviateBackend creates a Weaviate vector search backend
 func NewWeaviateBackend(config types.VectorSearchConfig) (types.VectorSearchBackend, error) {
 	// TODO: Implement in Session 6
-	return nil, fmt.Errorf("Weaviate vector search backend not yet implemented")
+	return nil, fmt.Errorf("weaviate vector search backend not yet implemented")
 }
 
 // NewChromaBackend creates a Chroma vector search backend
 func NewChromaBackend(config types.VectorSearchConfig) (types.VectorSearchBackend, error) {
 	// TODO: Implement in Session 6
-	return nil, fmt.Errorf("Chroma vector search backend not yet implemented")
+	return nil, fmt.Errorf("chroma vector search backend not yet implemented")
 }
 
 // NewQdrantBackend creates a Qdrant vector search backend
 func NewQdrantBackend(config types.VectorSearchConfig) (types.VectorSearchBackend, error) {
 	// TODO: Implement in Session 6
-	return nil, fmt.Errorf("Qdrant vector search backend not yet implemented")
+	return nil, fmt.Errorf("qdrant vector search backend not yet implemented")
 }
 
 // DefaultFactory is the default vector search factory instance

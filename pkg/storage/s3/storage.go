@@ -72,7 +72,7 @@ func (s *Storage) Type() types.StorageType {
 // Read retrieves a file's content by path
 func (s *Storage) Read(ctx context.Context, path string) ([]byte, error) {
 	key := s.buildKey(path)
-	
+
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
@@ -95,7 +95,7 @@ func (s *Storage) Read(ctx context.Context, path string) ([]byte, error) {
 // Write stores content at the given path
 func (s *Storage) Write(ctx context.Context, path string, data []byte) error {
 	key := s.buildKey(path)
-	
+
 	input := &s3.PutObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
@@ -126,7 +126,7 @@ func (s *Storage) Write(ctx context.Context, path string, data []byte) error {
 // Delete removes a file at the given path
 func (s *Storage) Delete(ctx context.Context, path string) error {
 	key := s.buildKey(path)
-	
+
 	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
@@ -143,7 +143,7 @@ func (s *Storage) Delete(ctx context.Context, path string) error {
 // Exists checks if a file exists at the given path
 func (s *Storage) Exists(ctx context.Context, path string) (bool, error) {
 	key := s.buildKey(path)
-	
+
 	input := &s3.HeadObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
@@ -164,7 +164,7 @@ func (s *Storage) Exists(ctx context.Context, path string) (bool, error) {
 // List returns all files matching the given prefix
 func (s *Storage) List(ctx context.Context, prefix string) ([]string, error) {
 	key := s.buildKey(prefix)
-	
+
 	input := &s3.ListObjectsV2Input{
 		Bucket: aws.String(s.config.Bucket),
 		Prefix: aws.String(key),
@@ -196,7 +196,7 @@ func (s *Storage) List(ctx context.Context, prefix string) ([]string, error) {
 // Stat returns metadata about a file
 func (s *Storage) Stat(ctx context.Context, path string) (*types.FileInfo, error) {
 	key := s.buildKey(path)
-	
+
 	input := &s3.HeadObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
@@ -238,7 +238,7 @@ func (s *Storage) Stat(ctx context.Context, path string) (*types.FileInfo, error
 // ReadStream returns a reader for streaming large files
 func (s *Storage) ReadStream(ctx context.Context, path string) (io.ReadCloser, error) {
 	key := s.buildKey(path)
-	
+
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
@@ -255,7 +255,7 @@ func (s *Storage) ReadStream(ctx context.Context, path string) (io.ReadCloser, e
 // WriteStream writes data from a reader to the given path
 func (s *Storage) WriteStream(ctx context.Context, path string, reader io.Reader) error {
 	key := s.buildKey(path)
-	
+
 	input := &s3.PutObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
@@ -287,9 +287,9 @@ func (s *Storage) WriteStream(ctx context.Context, path string, reader io.Reader
 func (s *Storage) Copy(ctx context.Context, src, dst string) error {
 	srcKey := s.buildKey(src)
 	dstKey := s.buildKey(dst)
-	
+
 	copySource := fmt.Sprintf("%s/%s", s.config.Bucket, srcKey)
-	
+
 	input := &s3.CopyObjectInput{
 		Bucket:     aws.String(s.config.Bucket),
 		Key:        aws.String(dstKey),
@@ -377,7 +377,7 @@ func isRetryableS3Error(err error) bool {
 		case "InternalError", "ServiceUnavailable", "SlowDown", "RequestTimeout":
 			return true
 		}
-		
+
 		// Check HTTP status code for retryable errors
 		if httpErr, ok := apiErr.(interface{ HTTPStatusCode() int }); ok {
 			code := httpErr.HTTPStatusCode()
@@ -417,7 +417,7 @@ func validateConfig(cfg types.S3StorageConfig) error {
 // createAWSConfig creates AWS SDK configuration from S3 config
 func createAWSConfig(cfg types.S3StorageConfig) (aws.Config, error) {
 	ctx := context.Background()
-	
+
 	var opts []func(*config.LoadOptions) error
 
 	// Set region
@@ -427,8 +427,10 @@ func createAWSConfig(cfg types.S3StorageConfig) (aws.Config, error) {
 	if cfg.Endpoint != "" {
 		// Note: Custom endpoint handling - using deprecated API for compatibility
 		// TODO: Migrate to service-specific endpoint resolution in future version
+		// nolint:staticcheck
 		opts = append(opts, config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
 			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+				// nolint:staticcheck
 				return aws.Endpoint{
 					URL:           cfg.Endpoint,
 					SigningRegion: cfg.Region,
