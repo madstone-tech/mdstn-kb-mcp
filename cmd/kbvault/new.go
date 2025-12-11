@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,7 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/ulid"
 )
@@ -29,10 +31,10 @@ func newNewCmd() *cobra.Command {
 The note will be created in the vault's notes directory.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load configuration
-			config, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load configuration: %w", err)
+			// Use profile-aware configuration
+			config := getConfig()
+			if config == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
 			// Determine title
@@ -43,16 +45,34 @@ The note will be created in the vault's notes directory.`,
 				title = "Untitled Note"
 			}
 
+			// Create storage backend
+			storageBackend, err := storage.CreateStorage(config.Storage)
+			if err != nil {
+				return fmt.Errorf("failed to create storage backend: %w", err)
+			}
+			defer func() {
+				if err := storageBackend.Close(); err != nil {
+					// Log error but don't fail the command
+					fmt.Printf("Warning: failed to close storage: %v\n", err)
+				}
+			}()
+
 			// Create new note
 			note, err := createNewNote(config, title, template, tags)
 			if err != nil {
 				return fmt.Errorf("failed to create note: %w", err)
 			}
 
+			// Save the note to storage
+			ctx := context.Background()
+			if err := saveNote(ctx, storageBackend, note); err != nil {
+				return fmt.Errorf("failed to save note: %w", err)
+			}
+
 			fmt.Printf("✅ Created note: %s\n", note.Title)
 			fmt.Printf("📝 ID: %s\n", note.ID)
 			fmt.Printf("📁 Path: %s\n", note.FilePath)
-			fmt.Println("Note creation not yet fully implemented - this is a placeholder")
+			fmt.Printf("💾 Storage: %s\n", config.Storage.Type)
 
 			// Open in editor if requested
 			if open {
@@ -77,7 +97,7 @@ func createNewNote(config *types.Config, title, template string, tags []string) 
 
 	// Create filename
 	filename := ulid.ToFilename(id)
-	filePath := filepath.Join("notes", filename)
+	filePath := filepath.Join(config.Vault.NotesDir, filename)
 
 	// Create note structure
 	note := &types.Note{
@@ -85,13 +105,13 @@ func createNewNote(config *types.Config, title, template string, tags []string) 
 		Title:          title,
 		Content:        "",
 		FilePath:       filePath,
-		StorageBackend: types.StorageTypeLocal,
+		StorageBackend: config.Storage.Type,
 		Frontmatter: types.Frontmatter{
 			ID:      id,
 			Title:   title,
 			Tags:    tags,
 			Type:    "note",
-			Storage: "local",
+			Storage: string(config.Storage.Type),
 			Created: time.Now().Format("2006-01-02T15:04:05Z"),
 			Updated: time.Now().Format("2006-01-02T15:04:05Z"),
 		},
@@ -141,18 +161,32 @@ func openInEditor(filePath string) error {
 	return cmd.Run()
 }
 
-func loadConfig() (*types.Config, error) {
-	// Try to find vault root
-	vaultRoot, err := findVaultRoot()
-	if err != nil {
-		return nil, fmt.Errorf("not in a kbvault directory: %w", err)
+
+func saveNote(ctx context.Context, storage types.StorageBackend, note *types.Note) error {
+	// Format note content with frontmatter
+	var buf bytes.Buffer
+	
+	// Write frontmatter
+	buf.WriteString("---\n")
+	buf.WriteString(fmt.Sprintf("id: %s\n", note.ID))
+	buf.WriteString(fmt.Sprintf("title: %s\n", note.Title))
+	if len(note.Frontmatter.Tags) > 0 {
+		buf.WriteString("tags:\n")
+		for _, tag := range note.Frontmatter.Tags {
+			buf.WriteString(fmt.Sprintf("  - %s\n", tag))
+		}
 	}
-
-	// Load configuration
-	manager := config.NewManager()
-	configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
-
-	return manager.LoadFromFile(configPath)
+	buf.WriteString(fmt.Sprintf("type: %s\n", note.Frontmatter.Type))
+	buf.WriteString(fmt.Sprintf("storage: %s\n", note.Frontmatter.Storage))
+	buf.WriteString(fmt.Sprintf("created: %s\n", note.Frontmatter.Created))
+	buf.WriteString(fmt.Sprintf("updated: %s\n", note.Frontmatter.Updated))
+	buf.WriteString("---\n\n")
+	
+	// Write content
+	buf.WriteString(note.Content)
+	
+	// Save to storage
+	return storage.Write(ctx, note.FilePath, buf.Bytes())
 }
 
 func findVaultRoot() (string, error) {
