@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -67,7 +67,7 @@ Examples:
 	}
 
 	// Add global flags
-	cmd.PersistentFlags().StringVar(&globalFlags.Profile, "profile", "", 
+	cmd.PersistentFlags().StringVar(&globalFlags.Profile, "profile", "",
 		"Configuration profile to use (default: active profile)")
 
 	// Add subcommands
@@ -81,6 +81,7 @@ Examples:
 	cmd.AddCommand(newDeleteCmd())
 	cmd.AddCommand(newProfileCmd())
 	cmd.AddCommand(newConfigureCmd())
+	cmd.AddCommand(newCompletionCmd())
 
 	return cmd
 }
@@ -88,14 +89,14 @@ Examples:
 // initializeConfig initializes the profile manager and resolves the configuration
 func initializeConfig() error {
 	var err error
-	
+
 	// First, check for local vault configuration (backward compatibility)
 	if localConfig := tryLoadLocalConfig(); localConfig != nil {
 		currentConfig = localConfig
 		currentProfile = "local"
 		return nil
 	}
-	
+
 	// Initialize profile manager
 	profileManager, err = config.NewProfileManager()
 	if err != nil {
@@ -113,7 +114,7 @@ func initializeConfig() error {
 		if err != nil {
 			return fmt.Errorf("failed to list profiles: %w", err)
 		}
-		
+
 		found := false
 		for _, p := range profiles {
 			if p.Name == profile {
@@ -121,7 +122,7 @@ func initializeConfig() error {
 				break
 			}
 		}
-		
+
 		if !found {
 			return fmt.Errorf("profile '%s' does not exist. Use 'kbvault profile list' to see available profiles", profile)
 		}
@@ -145,19 +146,18 @@ func tryLoadLocalConfig() *types.Config {
 	if err != nil {
 		return nil
 	}
-	
+
 	configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
-	
+
 	// Use config manager to load the configuration
 	manager := config.NewManager()
 	cfg, err := manager.LoadFromFile(configPath)
 	if err != nil {
 		return nil
 	}
-	
+
 	return cfg
 }
-
 
 // getConfig returns the current configuration
 func getConfig() *types.Config {

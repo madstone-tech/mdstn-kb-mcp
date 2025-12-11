@@ -1,0 +1,197 @@
+# GoReleaser configuration for Ason
+# https://goreleaser.com
+
+version: 2
+
+# Project metadata
+project_name: ason
+
+# Environment variables
+env:
+  - GO111MODULE=on
+
+# Git configuration
+git:
+  # What should be used to sort tags when gathering the current and previous
+  # tags if there are more than one tag in the same commit.
+  tag_sort: -version:refname
+
+# Build configuration
+builds:
+  - id: ason
+    binary: ason
+    main: .
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    # Build flags
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+    env:
+      - CGO_ENABLED=0
+
+# Universal binaries for macOS
+universal_binaries:
+  - id: ason_universal
+    replace: true
+    name_template: ason
+
+# Hooks to generate completions before archiving
+before:
+  hooks:
+    - go mod tidy
+    - ./scripts/generate-completions.sh
+
+# Archives configuration
+archives:
+  - id: default
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE*
+      - CHANGELOG*
+      - scripts/install-completion.sh
+      - completions/*
+
+# Checksum
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# Snapshot builds
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+# Changelog
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - "^style:"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+  groups:
+    - title: "New Features"
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "Bug Fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: "Enhancements"
+      regexp: "^.*enhance[(\\w)]*:+.*$"
+      order: 2
+    - title: "Performance Improvements"
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 3
+    - title: "Refactoring"
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 4
+    - title: "Other"
+      order: 999
+
+# GitHub Release
+release:
+  github:
+    owner: madstone-tech
+    name: ason
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## ※ Ason {{ .Tag }} - The Sacred Rattle Awakens
+
+    This release brings forth new transformations and enhancements to your project generation workflow.
+
+    ### Installation
+
+    ```bash
+    # Download the binary for your platform from the assets below
+    # Extract and install
+    tar -xzf ason_*.tar.gz
+    sudo mv ason /usr/local/bin/
+
+    # Or using Go
+    go install github.com/madstone-tech/ason@{{ .Tag }}
+
+    # Or using Homebrew
+    brew tap madstone-tech/tap
+    brew install ason
+    ```
+
+    ### Verification
+
+    ```bash
+    ason --version
+    ```
+
+  footer: |
+    ## The Rhythm Continues...
+
+    **Full Changelog**: https://github.com/madstone-tech/ason/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    **Docker**: `docker run --rm -v $(pwd):/workspace ghcr.io/madstone-tech/ason:{{ .Tag }}`
+
+    **Checksums**: {{ .Tag }}/checksums.txt
+
+    ---
+    *🪇 Transform your templates into living projects with the sacred rhythm of Ason*
+
+  # Extra files to include in release
+  extra_files:
+    - glob: scripts/install-completion.sh
+      name_template: install-completion.sh
+
+# Homebrew (macOS package manager)
+brews:
+  - repository:
+      owner: madstone-tech
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/madstone-tech/ason
+    description: "※ The sacred rattle that transforms templates into living projects"
+    license: MIT
+    test: |
+      system "#{bin}/ason --version"
+    install: |
+      bin.install "ason"
+
+      # Generate and install shell completions
+      bash_completion.install "completions/ason.bash" => "ason" if File.exist?("completions/ason.bash")
+      zsh_completion.install "completions/_ason" if File.exist?("completions/_ason")
+      fish_completion.install "completions/ason.fish" if File.exist?("completions/ason.fish")
+
+# Announce releases
+announce:
+  # Skip announcement for now
+  skip: true

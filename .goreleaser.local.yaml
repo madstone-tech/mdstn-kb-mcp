@@ -1,0 +1,74 @@
+# GoReleaser configuration for local builds
+# Usage: goreleaser build --config .goreleaser.local.yaml --snapshot --clean
+
+version: 2
+
+# Project metadata
+project_name: ason
+
+# Environment variables
+env:
+  - GO111MODULE=on
+
+# Build configuration for local development
+builds:
+  - id: ason_local
+    binary: ason
+    main: .
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # Build for current platform only in local mode
+    targets:
+      - go_first_class
+    # Build flags
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=local
+    env:
+      - CGO_ENABLED=0
+
+# Archives configuration for local builds
+archives:
+  - id: local
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_local_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE*
+      - scripts/install-completion.sh
+
+# Checksum
+checksum:
+  name_template: checksums_local.txt
+  algorithm: sha256
+
+# Snapshot builds
+snapshot:
+  name_template: "{{ incpatch .Version }}-dev-{{.Commit}}"
+
+# Disable features not needed for local builds
+changelog:
+  disable: true
+
+release:
+  disable: true
+
+# Skip package managers and Docker for local builds
+# These sections are simply omitted rather than using skip
