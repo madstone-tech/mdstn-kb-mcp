@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -76,7 +77,24 @@ The note will be created in the vault's notes directory.`,
 
 			// Open in editor if requested
 			if open {
-				return openInEditor(note.FilePath)
+				// Open editor and get modified content
+				editedContent, err := openInEditorAndRead(note.FilePath)
+				if err != nil {
+					return fmt.Errorf("failed to edit note: %w", err)
+				}
+
+				// If user made changes, update the note and resave with frontmatter
+				if editedContent != "" {
+					note.Content = editedContent
+					note.Frontmatter.Updated = time.Now().Format("2006-01-02T15:04:05Z")
+					note.UpdatedAt = time.Now()
+
+					// Resave with updated frontmatter
+					if err := saveNote(ctx, storageBackend, note); err != nil {
+						return fmt.Errorf("failed to save edited note: %w", err)
+					}
+					fmt.Printf("✅ Note updated with your edits\n")
+				}
 			}
 
 			return nil
@@ -162,6 +180,46 @@ func openInEditor(filePath string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// openInEditorAndRead opens a file in the editor and returns the edited content
+func openInEditorAndRead(filePath string) (string, error) {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "nano" // fallback editor
+	}
+
+	fmt.Printf("Opening in editor: %s %s\n", editor, filePath)
+
+	// Open the file in the editor
+	cmd := exec.Command(editor, filePath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("editor exited with error: %w", err)
+	}
+
+	// Read the edited file content (excluding frontmatter)
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read edited file: %w", err)
+	}
+
+	// Extract content after frontmatter
+	content := string(data)
+	// If file starts with ---, skip the frontmatter
+	if strings.HasPrefix(content, "---") {
+		parts := strings.SplitN(content, "---", 3)
+		if len(parts) >= 3 {
+			// Return content after the closing ---
+			return strings.TrimSpace(parts[2]), nil
+		}
+	}
+
+	// Return all content if no frontmatter
+	return strings.TrimSpace(content), nil
 }
 
 func saveNote(ctx context.Context, storage types.StorageBackend, note *types.Note) error {
