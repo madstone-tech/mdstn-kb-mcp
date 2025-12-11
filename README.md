@@ -252,23 +252,28 @@ kbvault profile set-active work
 
 See [Profiles Guide](docs/guides/profiles.md) and [Configuration Guide](docs/guides/configuration.md).
 
-## Roadmap
+## Feature Status
 
-### Current (v1.0.0+)
-- ✅ Note management (CRUD)
-- ✅ Full-text search
-- ✅ Local & S3 storage
-- ✅ Multi-profile support
-- ✅ Bidirectional links
-- ✅ Shell completions
+### Fully Implemented (v1.0.0+)
+- ✅ Note management (CRUD operations)
+- ✅ Full-text search with inverted indexing
+- ✅ Local & S3-compatible storage
+- ✅ Multi-profile support for multiple vaults
+- ✅ Bidirectional link detection and management
+- ✅ Shell completions (bash, zsh, fish)
+- ✅ TOML-based configuration system
+- ✅ Template system for note creation
+
+### In Progress / Partial
+- 🟡 MCP Protocol - Basic structure in place, not fully functional
+- 🟡 HTTP Server - Configuration exists, API endpoints not yet implemented
 
 ### Planned (v1.1.0+)
-- 📋 HTTP API
-- 📋 Terminal UI (TUI)
 - 📋 Vector-based semantic search
-- 📋 MCP Protocol support
-- 📋 Windows support
+- 📋 HTTP REST API endpoints
+- 📋 Terminal UI (TUI)
 - 📋 gRPC API
+- 📋 Windows support
 
 See [Implementation Plan](docs/implementation-sessions.md) for details.
 

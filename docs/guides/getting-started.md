@@ -82,6 +82,8 @@ This creates:
 - `config.toml` with default settings
 - An empty `notes/` directory
 
+> **Note:** During initialization, you may be asked to configure optional settings like HTTP server configuration. You can safely skip these by pressing `n` (they're optional and not required for basic usage).
+
 ### Step 2: Create Your First Note
 
 ```bash
@@ -100,42 +102,39 @@ This opens your default editor where you can:
 
 Your note is now saved with a unique ID!
 
-### Step 3: List Your Notes
-
-```bash
-kbvault list
-```
-
-Output:
-```
-ID                        Title                     Tags              Created
-01ARZ3NDEKTSV4RRFFQ69G5FAV  Welcome to kbVault       getting-started   2025-12-11 10:30:00
-```
-
-### Step 4: View a Note
-
-```bash
-# View by ID
-kbvault show 01ARZ3NDEKTSV4RRFFQ69G5FAV
-
-# Or by title (using a substring)
-kbvault show "Welcome"
-```
-
-### Step 5: Search Your Notes
+### Step 3: Search Your Notes
 
 ```bash
 kbvault search "welcome"
 ```
 
-### Step 6: Edit a Note
+> **Note:** The `list` and `show` commands are currently placeholders and will be fully implemented in a future release. Use `search` to find your notes.
+
+### Step 4: View a Note (Coming Soon)
+
+The `show` command will allow you to view note details. Currently, you can:
+- Use `search` to find notes by content
+- Edit notes using `kbvault edit "title"`
+
+### Step 5: Edit Your Notes
+
+Edit an existing note in your default editor:
 
 ```bash
-# Edit by ID
-kbvault edit 01ARZ3NDEKTSV4RRFFQ69G5FAV
+# Edit by title
+kbvault edit "Welcome to kbVault"
+```
 
-# Or by title
-kbvault edit "Welcome"
+### Step 6: Delete a Note
+
+Remove a note when you no longer need it:
+
+```bash
+# Delete with confirmation
+kbvault delete "Welcome to kbVault"
+
+# Delete without confirmation prompt
+kbvault delete "Welcome to kbVault" --force
 ```
 
 ## Understanding the Vault Structure

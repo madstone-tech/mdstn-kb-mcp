@@ -59,6 +59,13 @@ index_type = "inverted"
 enabled = false
 engine = "none"
 
+[server]
+[server.http]
+enabled = false
+host = "localhost"
+port = 8080
+enable_cors = true
+
 [settings]
 auto_index = true
 case_sensitive_search = false
@@ -185,7 +192,7 @@ engine = "none"
 
 ### Future: Vector Search
 
-When semantic search is enabled:
+When semantic search is enabled (planned for v1.1.0+):
 
 ```toml
 [vector]
@@ -197,6 +204,34 @@ api_key = "${PINECONE_API_KEY}"
 index_name = "kbvault"
 environment = "us-west-1"
 ```
+
+## HTTP Server Configuration
+
+Optional REST API server configuration for programmatic access:
+
+```toml
+[server]
+[server.http]
+# Enable/disable HTTP REST API server
+enabled = true
+
+# Server hostname or IP address
+host = "localhost"
+
+# Server port (must be between 1 and 65535)
+port = 8080
+
+# Enable Cross-Origin Resource Sharing
+enable_cors = true
+```
+
+**Options:**
+- `enabled` - Enable/disable the HTTP server (default: `true`)
+- `host` - Server hostname or IP address (default: `"localhost"`)
+- `port` - Server port number (default: `8080`, range: 1-65535)
+- `enable_cors` - Enable CORS headers for cross-origin requests (default: `true`)
+
+**Note:** The HTTP API endpoints are planned for a future release. Currently, the server configuration is stored but the API is not fully implemented.
 
 ## Settings
 
@@ -293,11 +328,20 @@ kbvault configure
 ```
 
 This will prompt you for:
-1. Vault name
-2. Storage type (local or S3)
-3. Storage path/bucket
-4. Search engine preferences
-5. Editor preference
+1. **Vault Settings**: Name, notes directory, templates
+2. **Storage Configuration**: Type (local or S3) and path/bucket
+3. **Storage Options**: File locking, server-side encryption
+4. **Server Configuration** (optional): HTTP server settings (host, port, CORS)
+
+When prompted "Configure HTTP server settings?", you can:
+- **Press `y`** to configure HTTP server (optional)
+- **Press `n`** to skip (recommended for most users)
+
+If you configure the HTTP server, you'll be asked for:
+- Enable HTTP server (default: yes)
+- Server host (default: `localhost`)
+- Server port (default: `8080`, must be 1-65535)
+- Enable CORS (default: no)
 
 ### Reset Configuration
 

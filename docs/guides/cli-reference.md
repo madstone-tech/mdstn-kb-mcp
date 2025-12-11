@@ -2,6 +2,11 @@
 
 Complete reference for all kbVault command-line commands.
 
+> ⚠️ **Note on Command Implementation Status**: Some commands listed below are partially implemented (placeholders). 
+> - **Fully Working**: `init`, `new`, `search`, `delete`, `config`, `profile`, `configure`
+> - **Partially Working**: `show` (returns placeholder), `list` (not yet implemented), `edit` (accepts input but limited), `completion`
+> - For up-to-date implementation status, run `kbvault --help` or check the [Feature Status](../README.md#feature-status).
+
 ## Usage
 
 ```bash
@@ -64,26 +69,27 @@ kbvault new [title]
 - `title` - Note title (optional; prompted if not provided)
 
 **Options:**
-- `--template <name>` - Use a specific template
-- `--tags <tag1,tag2>` - Add tags to the note
-- `--no-edit` - Create note without opening editor
+- `-o, --open` - Open the note in default editor after creation
+- `--tags <tag1,tag2>` - Add tags to the note (comma-separated)
+- `--template <name>` - Use a specific template (default: "default")
+- `-t, --title <string>` - Note title (alternative to positional argument)
 
 **Examples:**
 ```bash
 # Create a note with title
 kbvault new "My New Note"
 
-# Create and edit immediately
-kbvault new "Research Topic"
-
-# Create without opening editor
-kbvault new "Quick Thought" --no-edit
-
 # Create with tags
 kbvault new "Python Tutorial" --tags python,tutorial,beginner
 
-# Use a template
+# Use a specific template
 kbvault new "Meeting Notes" --template meeting
+
+# Create without opening editor (just pass title without --open)
+kbvault new "Quick Thought"
+
+# Create with title flag instead of positional argument
+kbvault new --title "My Note" --tags test
 ```
 
 **Output:**
@@ -94,83 +100,77 @@ Title: My New Note
 
 ---
 
-#### `show` - Display a note
+#### `show` - Display a note (Placeholder - Not Fully Implemented)
 
-Show the contents of a note.
+Display a note's content. This command is currently a placeholder and returns limited information.
 
 ```bash
-kbvault show [id-or-title]
+kbvault show <note-id>
 ```
 
 **Arguments:**
-- `id-or-title` - Note ID or title (optional; lists if not provided)
+- `note-id` - Note ID (required)
 
 **Options:**
-- `--format <json|toml|text>` - Output format (default: text)
-- `--raw` - Show raw content without formatting
+- `-c, --content` - Show note content (default: true)
+- `-f, --format <json|default|markdown>` - Output format (default: default)
+- `-m, --metadata` - Show note metadata (default: true)
+
+**Current Limitations:**
+- Does not load actual note content
+- Returns placeholder data
+- Full implementation coming in future release
 
 **Examples:**
 ```bash
-# Show by ID
+# Show by ID (returns placeholder)
 kbvault show 01ARZ3NDEKTSV4RRFFQ69G5FAV
 
-# Show by title (substring match)
-kbvault show "My New"
-
 # Show in JSON format
-kbvault show "My Note" --format json
-
-# Show raw content
-kbvault show "My Note" --raw
-
-# Interactive selection if ambiguous
-kbvault show
+kbvault show 01ARZ3NDEKTSV4RRFFQ69G5FAV --format json
 ```
+
+**Workaround:** Use `search` to find notes until `show` is fully implemented.
 
 ---
 
-#### `list` - List all notes
+#### `list` - List all notes (Placeholder - Not Fully Implemented)
 
-List all notes in the vault with optional filtering.
+List all notes in the vault. This command is currently a placeholder.
 
 ```bash
 kbvault list [options]
 ```
 
 **Options:**
-- `--tag <tag>` - Filter by tag
-- `--search <query>` - Search notes
-- `--sort <field>` - Sort by field (created, modified, title)
-- `--format <json|table|csv>` - Output format (default: table)
-- `--limit <n>` - Limit results
+- `-t, --tags <tag1,tag2>` - Filter by tags (comma-separated)
+- `-s, --sort <field>` - Sort by field (title, created, updated, default: updated)
+- `-r, --reverse` - Reverse sort order
+- `-f, --format <format>` - Output format (default, compact, json, default: default)
+- `-l, --limit <n>` - Limit number of results (0 = no limit)
+- `-p, --paths` - Show file paths
+
+**Current Limitations:**
+- Returns "Note listing not yet implemented" placeholder message
+- Filtering works partially (tags filter exists)
+- Full implementation coming in future release
 
 **Examples:**
 ```bash
-# List all notes
+# List all notes (returns placeholder)
 kbvault list
 
-# List notes with specific tag
-kbvault list --tag python
-
-# Search while listing
-kbvault list --search "tutorial"
-
-# Sort by modification time
-kbvault list --sort modified
-
-# Export as JSON
-kbvault list --format json
+# List with specific tags
+kbvault list --tags python,tutorial
 
 # Limit results
 kbvault list --limit 10
+
+# Show as JSON
+kbvault list --format json
 ```
 
-**Output:**
-```
-ID                        Title                     Tags              Created
-01ARZ3NDEKTSV4RRFFQ69G5FAV  My New Note               -                 2025-12-11 10:30:00
-01ARZ3NDEKTSV4RRDKJ50H1AB  Research Topic            -                 2025-12-11 10:35:00
-```
+**Workaround:** Use `search` to find notes until `list` is fully implemented.
 
 ---
 
@@ -179,26 +179,28 @@ ID                        Title                     Tags              Created
 Edit a note in your default editor.
 
 ```bash
-kbvault edit [id-or-title]
+kbvault edit <note-id-or-title>
 ```
 
 **Arguments:**
-- `id-or-title` - Note ID or title
+- `note-id-or-title` - Note ID or title (required)
 
 **Options:**
-- `--delete-field <field>` - Remove a field from front matter
+- `--editor <editor>` - Use specific editor (default: $EDITOR environment variable)
 
 **Examples:**
 ```bash
-# Edit by ID
+# Edit by note ID
 kbvault edit 01ARZ3NDEKTSV4RRFFQ69G5FAV
 
 # Edit by title
 kbvault edit "My Note"
 
-# Edit and remove a field
-kbvault edit "My Note" --delete-field tags
+# Use specific editor
+kbvault edit 01ARZ3NDEKTSV4RRFFQ69G5FAV --editor vim
 ```
+
+**Note:** If multiple notes match the title, you'll be prompted to choose.
 
 ---
 
@@ -241,40 +243,36 @@ kbvault delete "Old Note" --dry-run
 
 #### `search` - Search notes
 
-Search for notes using full-text search.
+Search for notes using full-text search across all content.
 
 ```bash
-kbvault search [query] [options]
+kbvault search <query> [options]
 ```
 
 **Arguments:**
-- `query` - Search query
+- `query` - Search query (required)
 
 **Options:**
-- `--field <field>` - Search specific field (title, content, tags)
-- `--case-sensitive` - Case-sensitive search
-- `--limit <n>` - Limit results
-- `--format <json|table>` - Output format
+- `--limit <n>` - Limit number of results
+- `-f, --format <format>` - Output format (default: table, available: json)
+
+**Current Limitations:**
+- `--field` option exists but returns no results (partial implementation)
+- `--case-sensitive` flag not available
 
 **Examples:**
 ```bash
 # Full-text search
 kbvault search "python"
 
-# Search in specific field
-kbvault search --field title "tutorial"
-kbvault search --field tags "python"
-kbvault search --field content "async"
-
-# Case-sensitive search
-kbvault search --case-sensitive "Python"
-
 # Limit results
 kbvault search "note" --limit 5
 
-# Export results
+# Export results as JSON
 kbvault search "query" --format json
 ```
+
+**Note:** Search by field (title, tags, content) is not yet working reliably. Use general search for best results.
 
 ---
 
@@ -282,7 +280,7 @@ kbvault search "query" --format json
 
 #### `config` - Manage vault configuration
 
-View and manage vault configuration.
+View and validate vault configuration.
 
 ```bash
 kbvault config <subcommand> [options]
@@ -295,17 +293,9 @@ kbvault config <subcommand> [options]
 kbvault config show
 ```
 
-**`config set`** - Set a configuration value
+**`config path`** - Show configuration file path
 ```bash
-kbvault config set <key> <value>
-kbvault config set notes_dir ./my-notes
-kbvault config set storage.type s3
-```
-
-**`config get`** - Get a specific configuration value
-```bash
-kbvault config get notes_dir
-kbvault config get storage.path
+kbvault config path
 ```
 
 **`config validate`** - Validate configuration
@@ -313,46 +303,51 @@ kbvault config get storage.path
 kbvault config validate
 ```
 
+**Current Limitations:**
+- `config get` - Not available (use `config show` instead)
+- `config set` - Causes crash (do not use)
+
 **Examples:**
 ```bash
 # View all configuration
 kbvault config show
 
-# Change notes directory
-kbvault config set notes_dir ./notes
-
-# Change storage backend
-kbvault config set storage.type s3
+# Show configuration file path
+kbvault config path
 
 # Validate configuration
 kbvault config validate
 ```
 
+**Note:** To modify configuration, edit `.kbvault/config.toml` directly or use `kbvault configure` for interactive setup.
+
 ---
 
 #### `configure` - Interactive configuration
 
-Configure vault interactively.
+Configure vault interactively, similar to AWS CLI.
 
 ```bash
 kbvault configure [options]
 ```
 
 **Options:**
-- `--reset` - Reset to default configuration
 - `--profile <name>` - Configure specific profile
+
+**Current Limitations:**
+- `--reset` flag not available (edit `.kbvault/config.toml` directly to reset)
 
 **Examples:**
 ```bash
 # Interactive configuration
 kbvault configure
 
-# Reset to defaults
-kbvault configure --reset
-
-# Configure profile
+# Configure specific profile
 kbvault --profile work configure
+kbvault --profile personal configure
 ```
+
+**Note:** You'll be guided through storage type, credentials, and other configuration options.
 
 ---
 
@@ -467,12 +462,14 @@ Tags help organize notes:
 # Create note with tags
 kbvault new "Python Tips" --tags python,programming,tips
 
-# Search by tag
-kbvault list --tag python
+# Filter notes by tag (note: list command returns placeholder)
+kbvault list --tags python
 
-# Filter search results by tag
-kbvault search --field tags "python"
+# Search for notes (general search works best)
+kbvault search "python"
 ```
+
+**Note:** The `--field tags` search option is not yet working. Use general search instead.
 
 ### Using Links
 
@@ -505,41 +502,47 @@ kbvault list --search "api"
 
 ## Tips & Tricks
 
-### Search Multiple Fields
+### Search Tips
 
 ```bash
-# Search title and tags
-kbvault search --field title "python"
-kbvault search --field tags "beginner"
+# General search across all content
+kbvault search "python"
+
+# Search with result limit
+kbvault search "tutorial" --limit 10
 ```
 
-### Export Notes
+**Note:** Search-by-field is not yet working. General search performs best.
+
+### Export Results
 
 ```bash
-# Export as JSON
-kbvault list --format json > notes.json
-
-# Export search results
+# Export search results as JSON
 kbvault search "query" --format json > results.json
 ```
+
+**Note:** Export via `list` is not yet available.
 
 ### Batch Operations
 
 ```bash
 # Create multiple notes
 for title in "Note 1" "Note 2" "Note 3"; do
-  kbvault new "$title" --no-edit
+  kbvault new "$title"
 done
 
-# Delete all with tag
-kbvault list --tag old --format json | jq -r '.[] | .id' | xargs kbvault delete --force
+# Delete by ID (bulk)
+# Note: kbvault delete accepts multiple IDs/titles
+kbvault delete "Old Note 1" "Old Note 2" --force
 ```
+
+**Note:** Batch operations via `list` are not available yet due to placeholder implementation.
 
 ### Profile Switching
 
 ```bash
 # Quick switch
-kbvault --profile work list
+kbvault --profile work search "project"
 kbvault --profile personal new "Personal Note"
 
 # Set default
@@ -547,7 +550,12 @@ kbvault profile set-active work
 
 # Then use without --profile flag
 kbvault new "Work Note"
+
+# View profile information
+kbvault profile show work
 ```
+
+**Note:** Profile list shows all available profiles.
 
 ---
 

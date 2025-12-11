@@ -61,12 +61,12 @@ Welcome to the kbVault knowledge base vault documentation. This is your central 
 
 kbVault provides multiple ways to interact with your knowledge base:
 
-- **CLI** - Command-line interface with shell completions
-- **Configuration** - TOML-based configuration with profiles
-- **HTTP API** - RESTful API for integration
-- **MCP** - Model Context Protocol for LLM integration
-- **TUI** - Terminal User Interface (planned)
-- **gRPC** - High-performance API (planned)
+- **CLI** ✅ - Command-line interface with shell completions
+- **Configuration** ✅ - TOML-based configuration with profiles
+- **HTTP API** 📋 - RESTful API endpoints (configuration system exists, implementation pending)
+- **MCP** 🟡 - Model Context Protocol (basic structure, not fully functional)
+- **TUI** 📋 - Terminal User Interface (planned)
+- **gRPC** 📋 - High-performance API (planned)
 
 ## Common Tasks
 

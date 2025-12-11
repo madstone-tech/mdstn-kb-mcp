@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 )
 
@@ -83,10 +84,26 @@ Supports nested keys using dot notation (e.g., server.http.port).`,
 				return fmt.Errorf("failed to set config value: %w", err)
 			}
 
-			// Save configuration to profile
+			// Save configuration to profile or local vault
 			profileManager := getProfileManager()
 			currentProfile := getProfile()
 
+			// If no profile manager (local vault mode), save to local .kbvault/config.toml
+			if profileManager == nil {
+				vaultRoot, err := findVaultRoot()
+				if err != nil {
+					return fmt.Errorf("failed to find vault root: %w", err)
+				}
+				configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
+				manager := config.NewManager()
+				if err := manager.SaveToFile(cfg, configPath); err != nil {
+					return fmt.Errorf("failed to save configuration to %s: %w", configPath, err)
+				}
+				fmt.Printf("✅ Set %s = %s\n", key, value)
+				return nil
+			}
+
+			// Profile mode: save to profile manager
 			if err := profileManager.UpdateProfile(currentProfile, cfg); err != nil {
 				return fmt.Errorf("failed to save configuration to profile '%s': %w", currentProfile, err)
 			}

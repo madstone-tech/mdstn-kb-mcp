@@ -94,6 +94,13 @@ func initializeConfig() error {
 	if localConfig := tryLoadLocalConfig(); localConfig != nil {
 		currentConfig = localConfig
 		currentProfile = "local"
+		// Still initialize profileManager for consistency (even for local vaults)
+		// This prevents nil pointer errors in commands like config set
+		profileManager, err = config.NewProfileManager()
+		if err != nil {
+			// Non-fatal error for local vault mode
+			profileManager = nil
+		}
 		return nil
 	}
 
