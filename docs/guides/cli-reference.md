@@ -2,6 +2,11 @@
 
 Complete reference for all kbVault command-line commands.
 
+> ⚠️ **Note on Command Implementation Status**: Some commands listed below are partially implemented (placeholders). 
+> - **Fully Working**: `init`, `new`, `search`, `delete`, `config`, `profile`, `configure`
+> - **Partially Working**: `show` (returns placeholder), `list` (not yet implemented), `edit` (accepts input but limited), `completion`
+> - For up-to-date implementation status, run `kbvault --help` or check the [Feature Status](../README.md#feature-status).
+
 ## Usage
 
 ```bash
