@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/config"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 )
 
 var (
@@ -12,7 +15,19 @@ var (
 	version    = "dev"
 	commitHash = "unknown"
 	buildTime  = "unknown"
+
+	// Global configuration and profile management
+	profileManager *config.ProfileManager
+	currentConfig  *types.Config
+	currentProfile string
 )
+
+// GlobalFlags contains flags that are available to all commands
+type GlobalFlags struct {
+	Profile string
+}
+
+var globalFlags = &GlobalFlags{}
 
 func main() {
 	if err := newRootCmd().Execute(); err != nil {
@@ -27,8 +42,22 @@ func newRootCmd() *cobra.Command {
 		Short: "High-performance Go knowledge management tool",
 		Long: `kbVault is a high-performance knowledge management system built in Go.
 It supports multiple storage backends (local, S3), provides full-text search,
-and includes CLI, TUI, HTTP API, and MCP interfaces.`,
+and includes CLI, TUI, HTTP API, and MCP interfaces.
+
+Profile Support:
+  Use --profile to specify which configuration profile to use.
+  Profiles allow you to maintain separate configurations for different
+  environments (work, personal, research, etc.).
+
+Examples:
+  kbvault --profile work search "project planning"
+  kbvault --profile personal new "Weekend Ideas"
+  kbvault profile list
+  kbvault profile create work --storage-type s3 --s3-bucket my-work-kb`,
 		Version: fmt.Sprintf("%s (commit: %s, built: %s)", version, commitHash, buildTime),
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return initializeConfig()
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			// Show help if no subcommand is provided
 			if err := cmd.Help(); err != nil {
@@ -36,6 +65,10 @@ and includes CLI, TUI, HTTP API, and MCP interfaces.`,
 			}
 		},
 	}
+
+	// Add global flags
+	cmd.PersistentFlags().StringVar(&globalFlags.Profile, "profile", "", 
+		"Configuration profile to use (default: active profile)")
 
 	// Add subcommands
 	cmd.AddCommand(newInitCmd())
@@ -46,6 +79,97 @@ and includes CLI, TUI, HTTP API, and MCP interfaces.`,
 	cmd.AddCommand(newSearchCmd())
 	cmd.AddCommand(newEditCmd())
 	cmd.AddCommand(newDeleteCmd())
+	cmd.AddCommand(newProfileCmd())
+	cmd.AddCommand(newConfigureCmd())
 
 	return cmd
+}
+
+// initializeConfig initializes the profile manager and resolves the configuration
+func initializeConfig() error {
+	var err error
+	
+	// First, check for local vault configuration (backward compatibility)
+	if localConfig := tryLoadLocalConfig(); localConfig != nil {
+		currentConfig = localConfig
+		currentProfile = "local"
+		return nil
+	}
+	
+	// Initialize profile manager
+	profileManager, err = config.NewProfileManager()
+	if err != nil {
+		return fmt.Errorf("failed to initialize profile manager: %w", err)
+	}
+
+	// Determine which profile to use
+	profile := globalFlags.Profile
+	if profile == "" {
+		// Use active profile if no profile specified
+		profile = profileManager.GetActiveProfile()
+	} else {
+		// Validate that the specified profile exists
+		profiles, err := profileManager.ListProfiles()
+		if err != nil {
+			return fmt.Errorf("failed to list profiles: %w", err)
+		}
+		
+		found := false
+		for _, p := range profiles {
+			if p.Name == profile {
+				found = true
+				break
+			}
+		}
+		
+		if !found {
+			return fmt.Errorf("profile '%s' does not exist. Use 'kbvault profile list' to see available profiles", profile)
+		}
+	}
+
+	// Load configuration for the resolved profile
+	currentConfig, err = profileManager.GetConfig(profile)
+	if err != nil {
+		return fmt.Errorf("failed to load configuration for profile '%s': %w", profile, err)
+	}
+
+	currentProfile = profile
+	return nil
+}
+
+// tryLoadLocalConfig attempts to load configuration from a local .kbvault directory
+// This provides backward compatibility with the old configuration system
+func tryLoadLocalConfig() *types.Config {
+	// Look for local vault configuration
+	vaultRoot, err := findVaultRoot()
+	if err != nil {
+		return nil
+	}
+	
+	configPath := filepath.Join(vaultRoot, ".kbvault", "config.toml")
+	
+	// Use config manager to load the configuration
+	manager := config.NewManager()
+	cfg, err := manager.LoadFromFile(configPath)
+	if err != nil {
+		return nil
+	}
+	
+	return cfg
+}
+
+
+// getConfig returns the current configuration
+func getConfig() *types.Config {
+	return currentConfig
+}
+
+// getProfile returns the current profile name
+func getProfile() string {
+	return currentProfile
+}
+
+// getProfileManager returns the profile manager instance
+func getProfileManager() *config.ProfileManager {
+	return profileManager
 }

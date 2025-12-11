@@ -1,0 +1,260 @@
+version: '3'
+
+vars:
+  BIN_DIR: bin
+  CMD_DIR: cmd/kbvault
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+  BUILD_TIME:
+    sh: date -u +%Y-%m-%dT%H:%M:%SZ
+  LDFLAGS: '-X main.version={{.VERSION}} -X main.commitHash={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}'
+  DOCKER_TAG: kbvault:latest
+  DOCKER_REGISTRY: ghcr.io/madstone-tech
+  DOCKER_IMAGE_BASE: ghcr.io/madstone-tech/kbvault
+  CONTAINER_ENGINE:
+    sh: command -v podman 2>/dev/null || echo docker
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  help:
+    desc: Show this help message
+    cmds:
+      - echo "kbVault - High-performance Go knowledge management tool"
+      - echo ""
+      - task --list-all
+
+  build:
+    desc: Build the kbvault binary
+    cmds:
+      - echo "Building kbvault..."
+      - mkdir -p {{.BIN_DIR}}
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN_DIR}}/kbvault ./{{.CMD_DIR}}
+
+  build_all:
+    desc: Build binaries for all platforms
+    cmds:
+      - echo "Building for all platforms..."
+      - mkdir -p {{.BIN_DIR}}
+      - GOOS=linux GOARCH=amd64 go build -ldflags "{{.LDFLAGS}}" -o {{.BIN_DIR}}/kbvault-linux-amd64 ./{{.CMD_DIR}}
+      - GOOS=darwin GOARCH=amd64 go build -ldflags "{{.LDFLAGS}}" -o {{.BIN_DIR}}/kbvault-darwin-amd64 ./{{.CMD_DIR}}
+      - GOOS=darwin GOARCH=arm64 go build -ldflags "{{.LDFLAGS}}" -o {{.BIN_DIR}}/kbvault-darwin-arm64 ./{{.CMD_DIR}}
+
+  dev:
+    desc: Build and run in development mode
+    cmds:
+      - go run -ldflags "{{.LDFLAGS}}" ./{{.CMD_DIR}}
+
+  install:
+    desc: Install kbvault to GOPATH/bin
+    cmds:
+      - go install -ldflags "{{.LDFLAGS}}" ./{{.CMD_DIR}}
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v -race ./...
+
+  test_coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -v -race -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo "Coverage report - coverage.html"
+
+  test_integration:
+    desc: Run integration tests (requires test environment)
+    cmds:
+      - go test -v -race -tags=integration ./...
+
+  benchmark:
+    desc: Run benchmarks
+    cmds:
+      - go test -v -bench=. -benchmem ./...
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - go fmt ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint (requires golangci-lint to be installed)
+    cmds:
+      - golangci-lint run --timeout=5m
+
+  check:
+    desc: Run all checks (format, vet, lint, test)
+    cmds:
+      - task fmt
+      - task vet
+      - task lint
+      - task test
+
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  dev_deps:
+    desc: Install development dependencies
+    cmds:
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+  tools:
+    desc: Install all development tools
+    cmds:
+      - task dev_deps
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.BIN_DIR}}
+      - rm -f coverage.out coverage.html
+
+  version:
+    desc: Show version information
+    cmds:
+      - echo "Version {{.VERSION}}"
+      - echo "Commit {{.COMMIT}}"
+      - echo "Built {{.BUILD_TIME}}"
+
+  setup:
+    desc: Set up development environment
+    cmds:
+      - task tools
+      - task deps
+      - echo "Development environment ready!"
+
+  quick:
+    desc: Quick development check (format, vet, test)
+    cmds:
+      - task fmt
+      - task vet
+      - task test
+
+  ci_test:
+    desc: CI test target
+    cmds:
+      - go test -v -race -coverprofile=coverage.out ./...
+
+  ci_build:
+    desc: CI build target
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN_DIR}}/kbvault ./{{.CMD_DIR}}
+
+  pre_commit:
+    desc: Run all pre-commit checks locally (mimics CI)
+    cmds:
+      - ./scripts/pre-commit.sh
+
+  generate:
+    desc: Run go generate
+    cmds:
+      - go generate ./...
+
+  docker_build:
+    desc: Build Docker image
+    cmds:
+      - echo "Building Docker image with {{.CONTAINER_ENGINE}}..."
+      - '{{.CONTAINER_ENGINE}} build -t {{.DOCKER_TAG}} .'
+
+  docker_build_multi:
+    desc: Build multi-architecture Docker images
+    cmds:
+      - echo "Building multi-architecture Docker images..."
+      - docker buildx build --platform linux/amd64,linux/arm64 -t {{.DOCKER_TAG}} .
+
+  docker_run:
+    desc: Run Docker container
+    cmds:
+      - echo "Running container with {{.CONTAINER_ENGINE}}..."
+      - '{{.CONTAINER_ENGINE}} run --rm -it -p 8080:8080 -p 9090:9090 {{.DOCKER_TAG}}'
+
+  docker_shell:
+    desc: Open shell in Docker container (not available with scratch image)
+    cmds:
+      - echo "Note - Shell not available in scratch-based image"
+      - echo "Running container version instead..."
+      - '{{.CONTAINER_ENGINE}} run --rm {{.DOCKER_TAG}} --version'
+
+  docker_push:
+    desc: Push Docker image to registry
+    cmds:
+      - echo "Pushing Docker image to registry with {{.CONTAINER_ENGINE}}..."
+      - '{{.CONTAINER_ENGINE}} tag {{.DOCKER_TAG}} {{.DOCKER_IMAGE_BASE}}:{{.VERSION}}'
+      - '{{.CONTAINER_ENGINE}} tag {{.DOCKER_TAG}} {{.DOCKER_IMAGE_BASE}}:latest'
+      - '{{.CONTAINER_ENGINE}} push {{.DOCKER_IMAGE_BASE}}:{{.VERSION}}'
+      - '{{.CONTAINER_ENGINE}} push {{.DOCKER_IMAGE_BASE}}:latest'
+
+  docker_clean:
+    desc: Clean Docker images and containers
+    cmds:
+      - echo "Cleaning images and containers with {{.CONTAINER_ENGINE}}..."
+      - '{{.CONTAINER_ENGINE}} system prune -f'
+      - '{{.CONTAINER_ENGINE}} rmi {{.DOCKER_TAG}} 2>/dev/null || true'
+      - '{{.CONTAINER_ENGINE}} rmi {{.DOCKER_IMAGE_BASE}}:{{.VERSION}} 2>/dev/null || true'
+      - '{{.CONTAINER_ENGINE}} rmi {{.DOCKER_IMAGE_BASE}}:latest 2>/dev/null || true'
+
+  release_dry:
+    desc: Dry run release (for testing)
+    cmds:
+      - echo "Running GoReleaser in dry-run mode..."
+      - goreleaser release --snapshot --clean --skip-publish
+
+  release_snapshot:
+    desc: Create snapshot release
+    cmds:
+      - echo "Creating snapshot release..."
+      - goreleaser release --snapshot --clean
+
+  release_check:
+    desc: Check release configuration
+    cmds:
+      - echo "Checking GoReleaser configuration..."
+      - goreleaser check
+
+  compose_up:
+    desc: Start development environment with docker-compose
+    cmds:
+      - echo "Starting development environment..."
+      - docker-compose up -d
+
+  compose_down:
+    desc: Stop development environment
+    cmds:
+      - echo "Stopping development environment..."
+      - docker-compose down
+
+  compose_logs:
+    desc: Show logs from development environment
+    cmds:
+      - docker-compose logs -f
+
+  security_scan:
+    desc: Run security scan with gosec
+    cmds:
+      - echo "Running security scan..."
+      - gosec ./...
+
+  security_deps:
+    desc: Check for vulnerable dependencies
+    cmds:
+      - echo "Checking for vulnerable dependencies..."
+      - go list -json -deps ./... | nancy sleuth
+
+  vuln_check:
+    desc: Check for vulnerabilities using govulncheck
+    cmds:
+      - echo "Running vulnerability check..."
+      - govulncheck ./...
