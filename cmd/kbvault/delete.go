@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage/local"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -41,19 +41,19 @@ Examples:
   kbvault delete note-123 --interactive`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load configuration
-			cfg, err := loadConfig()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
+			// Get profile-aware configuration
+			cfg := getConfig()
+			if cfg == nil {
+				return fmt.Errorf("configuration not initialized")
 			}
 
-			// Initialize storage
-			storage, err := local.New(cfg.Storage.Local)
+			// Initialize storage backend
+			storageBackend, err := storage.CreateStorage(cfg.Storage)
 			if err != nil {
 				return fmt.Errorf("failed to initialize storage: %w", err)
 			}
 			defer func() {
-				if closeErr := storage.Close(); closeErr != nil {
+				if closeErr := storageBackend.Close(); closeErr != nil {
 					// Log error but don't fail the command
 					fmt.Printf("Warning: failed to close storage: %v\n", closeErr)
 				}
@@ -62,7 +62,7 @@ Examples:
 			query := args[0]
 
 			// Find notes to delete
-			notes, err := findNotesToDelete(storage, query)
+			notes, err := findNotesToDelete(storageBackend, query)
 			if err != nil {
 				return err
 			}
@@ -88,7 +88,7 @@ Examples:
 			}
 
 			// Perform deletion
-			return deleteNotes(storage, notes)
+			return deleteNotes(storageBackend, notes)
 		},
 	}
 

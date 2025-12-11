@@ -19,6 +19,9 @@ type Config struct {
 
 	// MCP configuration
 	MCP MCPConfig `toml:"mcp" json:"mcp"`
+
+	// Vector search configuration
+	VectorSearch VectorSearchConfig `toml:"vector_search" json:"vector_search"`
 }
 
 // VaultConfig contains vault-specific settings
@@ -369,6 +372,7 @@ func DefaultConfig() *Config {
 			EnableBulkOperations: true,
 			MaxBulkSize:          100,
 		},
+		VectorSearch: *DefaultVectorSearchConfig(),
 	}
 }
 
