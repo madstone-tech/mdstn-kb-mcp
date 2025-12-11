@@ -11,13 +11,13 @@ import (
 
 // ProfileInfo contains metadata about a profile
 type ProfileInfo struct {
-	Name         string    `json:"name"`
-	IsActive     bool      `json:"is_active"`
-	IsDefault    bool      `json:"is_default"`
-	CreatedAt    time.Time `json:"created_at,omitempty"`
-	ModifiedAt   time.Time `json:"modified_at,omitempty"`
-	StorageType  string    `json:"storage_type"`
-	Description  string    `json:"description,omitempty"`
+	Name        string    `json:"name"`
+	IsActive    bool      `json:"is_active"`
+	IsDefault   bool      `json:"is_default"`
+	CreatedAt   time.Time `json:"created_at,omitempty"`
+	ModifiedAt  time.Time `json:"modified_at,omitempty"`
+	StorageType string    `json:"storage_type"`
+	Description string    `json:"description,omitempty"`
 }
 
 // ProfileManager provides high-level profile management operations
@@ -57,12 +57,12 @@ func (pm *ProfileManager) CreateProfile(name string, options *CreateProfileOptio
 
 	// Always start with default configuration to ensure all fields are populated
 	config := types.DefaultConfig()
-	
+
 	if options != nil {
 		if options.StorageType != "" {
 			config.Storage.Type = options.StorageType
 		}
-		
+
 		// Configure storage based on type
 		switch options.StorageType {
 		case types.StorageTypeS3:
@@ -194,6 +194,11 @@ func (pm *ProfileManager) UpdateProfile(name string, config *types.Config) error
 		return err
 	}
 
+	// Validate the configuration before saving
+	if err := config.Validate(); err != nil {
+		return fmt.Errorf("invalid profile configuration: %w", err)
+	}
+
 	return pm.viperManager.SaveProfile(name, config)
 }
 
@@ -204,6 +209,23 @@ func (pm *ProfileManager) CopyProfile(sourceName, targetName string) error {
 	}
 	if err := validateProfileName(targetName); err != nil {
 		return fmt.Errorf("invalid target profile name: %w", err)
+	}
+
+	// Verify source profile exists
+	profiles, err := pm.viperManager.ListProfiles()
+	if err != nil {
+		return fmt.Errorf("failed to list profiles: %w", err)
+	}
+
+	sourceExists := false
+	for _, p := range profiles {
+		if p == sourceName {
+			sourceExists = true
+			break
+		}
+	}
+	if !sourceExists {
+		return fmt.Errorf("failed to get source profile config: source profile %s does not exist", sourceName)
 	}
 
 	// Check if target already exists
@@ -289,18 +311,18 @@ func (pm *ProfileManager) ImportProfile(name string, config *types.Config) error
 type CreateProfileOptions struct {
 	// Storage configuration
 	StorageType types.StorageType `json:"storage_type,omitempty"`
-	
+
 	// Local storage options
 	LocalPath string `json:"local_path,omitempty"`
-	
+
 	// S3 storage options
 	S3Bucket   string `json:"s3_bucket,omitempty"`
 	S3Region   string `json:"s3_region,omitempty"`
 	S3Endpoint string `json:"s3_endpoint,omitempty"`
-	
+
 	// Vault options
 	VaultName string `json:"vault_name,omitempty"`
-	
+
 	// Profile metadata
 	Description string `json:"description,omitempty"`
 }
@@ -355,15 +377,15 @@ func validateProfileName(name string) error {
 	if name == "" {
 		return fmt.Errorf("profile name cannot be empty")
 	}
-	
+
 	if strings.ContainsAny(name, "/\\:*?\"<>|") {
 		return fmt.Errorf("profile name contains invalid characters")
 	}
-	
+
 	if len(name) > 64 {
 		return fmt.Errorf("profile name too long (max 64 characters)")
 	}
-	
+
 	return nil
 }
 
@@ -405,7 +427,7 @@ func setConfigValue(config *types.Config, key string, value interface{}) error {
 	default:
 		return fmt.Errorf("unsupported configuration key: %s", key)
 	}
-	
+
 	return nil
 }
 

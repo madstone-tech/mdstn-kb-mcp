@@ -6,21 +6,21 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/viper"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/types"
+	"github.com/spf13/viper"
 )
 
 // ViperManager manages configuration using Viper with profile support
 type ViperManager struct {
 	// Global Viper instance for global configuration
 	global *viper.Viper
-	
+
 	// Profile-specific Viper instances
 	profiles map[string]*viper.Viper
-	
+
 	// Current active profile
 	activeProfile string
-	
+
 	// Configuration directory paths
 	globalConfigDir   string
 	profilesConfigDir string
@@ -86,7 +86,7 @@ func (vm *ViperManager) initGlobalConfig() error {
 // loadActiveProfile loads the currently active profile
 func (vm *ViperManager) loadActiveProfile() error {
 	activeProfileFile := filepath.Join(vm.globalConfigDir, "active_profile")
-	
+
 	data, err := os.ReadFile(activeProfileFile)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -127,7 +127,7 @@ func (vm *ViperManager) GetConfig(profile string) (*types.Config, error) {
 
 	// Start with default configuration to ensure all fields have values
 	config := types.DefaultConfig()
-	
+
 	// Then, unmarshal global settings (overwrites defaults)
 	if err := vm.global.Unmarshal(config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal global config: %w", err)
@@ -157,7 +157,7 @@ func (vm *ViperManager) loadProfile(profile string) error {
 	profileViper.SetConfigName(profile)
 	profileViper.SetConfigType("toml")
 	profileViper.AddConfigPath(vm.profilesConfigDir)
-	
+
 	// Set environment variable prefix with profile
 	envPrefix := fmt.Sprintf("KBVAULT_%s", strings.ToUpper(profile))
 	profileViper.SetEnvPrefix(envPrefix)
@@ -182,6 +182,11 @@ func (vm *ViperManager) CreateProfile(name string, config *types.Config) error {
 		return fmt.Errorf("profile name cannot be empty")
 	}
 
+	// Validate the configuration before saving
+	if err := config.Validate(); err != nil {
+		return fmt.Errorf("profile configuration validation failed: %w", err)
+	}
+
 	// Ensure profiles directory exists
 	if err := os.MkdirAll(vm.profilesConfigDir, 0755); err != nil {
 		return fmt.Errorf("failed to create profiles directory: %w", err)
@@ -189,10 +194,10 @@ func (vm *ViperManager) CreateProfile(name string, config *types.Config) error {
 
 	// Create profile Viper instance
 	profileViper := viper.New()
-	
+
 	// Set all config values
 	vm.setConfigValues(profileViper, config)
-	
+
 	// Write profile config file
 	profilePath := filepath.Join(vm.profilesConfigDir, name+".toml")
 	if err := profileViper.WriteConfigAs(profilePath); err != nil {
@@ -252,7 +257,7 @@ func (vm *ViperManager) ListProfiles() ([]string, error) {
 		if entry.IsDir() {
 			continue
 		}
-		
+
 		name := entry.Name()
 		if strings.HasSuffix(name, ".toml") {
 			profileName := strings.TrimSuffix(name, ".toml")
@@ -354,7 +359,7 @@ func (vm *ViperManager) GetGlobalConfig() (*types.Config, error) {
 // SaveGlobalConfig saves the global configuration
 func (vm *ViperManager) SaveGlobalConfig(config *types.Config) error {
 	vm.setConfigValues(vm.global, config)
-	
+
 	globalConfigPath := filepath.Join(vm.globalConfigDir, "config.toml")
 	if err := os.MkdirAll(vm.globalConfigDir, 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -389,7 +394,7 @@ func (vm *ViperManager) setConfigValues(v *viper.Viper, config *types.Config) {
 
 	// Storage configuration
 	v.Set("storage.type", config.Storage.Type)
-	
+
 	// Local storage
 	v.Set("storage.local.path", config.Storage.Local.Path)
 	v.Set("storage.local.create_dirs", config.Storage.Local.CreateDirs)
@@ -471,29 +476,29 @@ func (vm *ViperManager) setConfigValues(v *viper.Viper, config *types.Config) {
 	// Vector search configuration
 	v.Set("vector_search.enabled", config.VectorSearch.Enabled)
 	v.Set("vector_search.type", config.VectorSearch.Type)
-	
+
 	// Embedding configuration
 	v.Set("vector_search.embedding.provider", config.VectorSearch.Embedding.Provider)
 	v.Set("vector_search.embedding.model", config.VectorSearch.Embedding.Model)
 	v.Set("vector_search.embedding.dimensions", config.VectorSearch.Embedding.Dimensions)
-	
+
 	// OpenAI embedding configuration
 	v.Set("vector_search.embedding.openai.api_key", config.VectorSearch.Embedding.OpenAI.APIKey)
 	v.Set("vector_search.embedding.openai.model", config.VectorSearch.Embedding.OpenAI.Model)
 	v.Set("vector_search.embedding.openai.base_url", config.VectorSearch.Embedding.OpenAI.BaseURL)
-	
+
 	// Local vector configuration
 	v.Set("vector_search.local.database_path", config.VectorSearch.Local.DatabasePath)
 	v.Set("vector_search.local.engine", config.VectorSearch.Local.Engine)
 	v.Set("vector_search.local.index_type", config.VectorSearch.Local.IndexType)
 	v.Set("vector_search.local.distance_metric", config.VectorSearch.Local.DistanceMetric)
-	
+
 	// Indexing configuration
 	v.Set("vector_search.indexing.auto_index", config.VectorSearch.Indexing.AutoIndex)
 	v.Set("vector_search.indexing.chunk_size", config.VectorSearch.Indexing.ChunkSize)
 	v.Set("vector_search.indexing.chunk_overlap", config.VectorSearch.Indexing.ChunkOverlap)
 	v.Set("vector_search.indexing.batch_size", config.VectorSearch.Indexing.BatchSize)
-	
+
 	// Search configuration
 	v.Set("vector_search.search.hybrid_enabled", config.VectorSearch.Search.HybridEnabled)
 	v.Set("vector_search.search.hybrid_weight", config.VectorSearch.Search.HybridWeight)
