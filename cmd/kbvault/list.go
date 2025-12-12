@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -88,10 +90,289 @@ Supports filtering by tags and various sorting options.`,
 }
 
 func listAllNotes(storage types.StorageBackend) ([]*types.Note, error) {
-	// For now, this is simplified - in a full implementation we'd properly parse
-	// markdown files and extract frontmatter
-	fmt.Println("Note listing not yet implemented - this is a placeholder")
-	return []*types.Note{}, nil
+	ctx := context.Background()
+
+	// Try to list files from common directories
+	dirs := []string{"", "notes/", "daily/"}
+	var allFiles []string
+
+	for _, dir := range dirs {
+		files, err := storage.List(ctx, dir)
+		if err != nil {
+			// Continue if directory doesn't exist
+			continue
+		}
+		allFiles = append(allFiles, files...)
+	}
+
+	// Remove duplicates (in case files appear in multiple directories)
+	fileSet := make(map[string]bool)
+	var uniqueFiles []string
+	for _, f := range allFiles {
+		if !fileSet[f] {
+			fileSet[f] = true
+			uniqueFiles = append(uniqueFiles, f)
+		}
+	}
+
+	var notes []*types.Note
+
+	for _, file := range uniqueFiles {
+		// Filter for markdown files only
+		if !strings.HasSuffix(file, ".md") {
+			continue
+		}
+
+		// Read and parse the note
+		note, err := readAndParseNote(storage, file)
+		if err != nil {
+			// Skip files that can't be parsed
+			// but don't fail the entire list command
+			continue
+		}
+
+		notes = append(notes, note)
+	}
+
+	return notes, nil
+}
+
+// readAndParseNote reads a note file and extracts its metadata
+func readAndParseNote(storage types.StorageBackend, filePath string) (*types.Note, error) {
+	ctx := context.Background()
+
+	// Read file content
+	data, err := storage.Read(ctx, filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+	}
+
+	content := string(data)
+	note := &types.Note{
+		FilePath: filePath,
+	}
+
+	// Extract ID from filename (remove .md extension)
+	base := filepath.Base(filePath)
+	if strings.HasSuffix(base, ".md") {
+		note.ID = strings.TrimSuffix(base, ".md")
+	} else {
+		note.ID = base
+	}
+
+	// Parse frontmatter and content to extract title and metadata
+	parsedContent := parseNoteMetadata(content, note)
+
+	// Fallback to ID if title is still empty
+	if note.Title == "" {
+		note.Title = note.ID
+	}
+
+	// Get file metadata for size and timestamps
+	fileInfo, err := storage.Stat(ctx, filePath)
+	if err == nil {
+		note.Size = fileInfo.Size
+		// Use ModTime for both created and updated if available
+		if fileInfo.ModTime > 0 {
+			modTime := time.Unix(0, fileInfo.ModTime*int64(time.Millisecond))
+			note.UpdatedAt = modTime
+			// If CreatedAt is zero, use UpdatedAt as default
+			if note.CreatedAt.IsZero() {
+				note.CreatedAt = modTime
+			}
+		}
+	}
+
+	// Set storage backend type
+	note.StorageBackend = storage.Type()
+
+	// Set content for the note
+	note.Content = parsedContent
+
+	return note, nil
+}
+
+// parseNoteMetadata extracts metadata from frontmatter and content
+func parseNoteMetadata(content string, note *types.Note) string {
+	// Check if content starts with YAML frontmatter marker
+	if !strings.HasPrefix(content, "---") {
+		// No frontmatter, extract title from markdown and use defaults
+		note.Title = extractTitleFromMarkdown(content)
+		note.Frontmatter = types.Frontmatter{
+			ID:   note.ID,
+			Type: "note",
+			Tags: []string{},
+		}
+		return content
+	}
+
+	// Split by frontmatter markers
+	parts := strings.SplitN(content, "---", 3)
+	if len(parts) < 3 {
+		// Invalid frontmatter, treat as plain content
+		note.Title = extractTitleFromMarkdown(content)
+		note.Frontmatter = types.Frontmatter{
+			ID:   note.ID,
+			Type: "note",
+			Tags: []string{},
+		}
+		return content
+	}
+
+	// parts[0] is empty (before first ---)
+	// parts[1] is the frontmatter
+	// parts[2] is the content
+	frontmatter := parts[1]
+	bodyContent := strings.TrimSpace(parts[2])
+
+	// Parse frontmatter fields
+	parseFrontmatterFields(frontmatter, note)
+
+	// Extract title from frontmatter
+	if note.Title == "" {
+		note.Title = extractTitleFromFrontmatter(frontmatter)
+	}
+
+	// If no title in frontmatter, try markdown heading
+	if note.Title == "" {
+		note.Title = extractTitleFromMarkdown(bodyContent)
+	}
+
+	return bodyContent
+}
+
+// parseFrontmatterFields extracts structured fields from YAML frontmatter
+func parseFrontmatterFields(frontmatter string, note *types.Note) {
+	lines := strings.Split(frontmatter, "\n")
+	fm := types.Frontmatter{
+		ID:   note.ID,
+		Type: "note",
+		Tags: []string{},
+	}
+
+	// Track if we're in a tags array
+	inTagsArray := false
+
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine == "" || strings.HasPrefix(trimmedLine, "#") {
+			continue
+		}
+
+		// Check if this line starts a tags array
+		if strings.HasPrefix(trimmedLine, "tags:") {
+			value := strings.TrimSpace(strings.TrimPrefix(trimmedLine, "tags:"))
+			// If value is empty, tags are on following lines
+			if value == "" {
+				inTagsArray = true
+				continue
+			}
+			// Handle inline tags: tags: [tag1, tag2]
+			value = strings.TrimPrefix(value, "[")
+			value = strings.TrimSuffix(value, "]")
+			if value != "" {
+				tagParts := strings.Split(value, ",")
+				for _, tag := range tagParts {
+					tag = strings.TrimSpace(tag)
+					tag = strings.Trim(tag, "\"'")
+					if tag != "" {
+						fm.Tags = append(fm.Tags, tag)
+					}
+				}
+			}
+			continue
+		}
+
+		// Parse YAML list items (tags array)
+		if inTagsArray {
+			if strings.HasPrefix(trimmedLine, "- ") {
+				tag := strings.TrimSpace(strings.TrimPrefix(trimmedLine, "-"))
+				tag = strings.Trim(tag, "\"'")
+				if tag != "" {
+					fm.Tags = append(fm.Tags, tag)
+				}
+			} else if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
+				// End of tags array (next non-indented line)
+				inTagsArray = false
+				// Re-process this line as a normal field
+				i := i
+				_ = i // avoid unused variable
+				// Continue to normal processing below
+			} else {
+				// Might be a continuation, check if it's still a list item
+				if !strings.HasPrefix(trimmedLine, "- ") {
+					inTagsArray = false
+				}
+			}
+
+			// Don't process this line further if we're still in tags array
+			if inTagsArray && strings.HasPrefix(trimmedLine, "- ") {
+				continue
+			}
+		}
+
+		// Parse key: value pairs
+		if !strings.Contains(trimmedLine, ":") {
+			continue
+		}
+
+		parts := strings.SplitN(trimmedLine, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		switch key {
+		case "id":
+			value = strings.Trim(value, "\"'")
+			if value != "" {
+				fm.ID = value
+			}
+
+		case "title":
+			value = strings.Trim(value, "\"'")
+			note.Title = value
+			fm.Title = value
+
+		case "type":
+			value = strings.Trim(value, "\"'")
+			if value != "" {
+				fm.Type = value
+			}
+
+		case "created":
+			value = strings.Trim(value, "\"'")
+			fm.Created = value
+			// Try to parse as ISO timestamp
+			if t, err := time.Parse(time.RFC3339, value); err == nil {
+				note.CreatedAt = t
+			}
+
+		case "updated":
+			value = strings.Trim(value, "\"'")
+			fm.Updated = value
+			// Try to parse as ISO timestamp
+			if t, err := time.Parse(time.RFC3339, value); err == nil {
+				note.UpdatedAt = t
+			}
+
+		case "storage":
+			value = strings.Trim(value, "\"'")
+			if value != "" {
+				fm.Storage = value
+			}
+
+		case "template":
+			value = strings.Trim(value, "\"'")
+			if value != "" {
+				fm.Template = value
+			}
+		}
+	}
+
+	note.Frontmatter = fm
 }
 
 func filterNotesByTags(notes []*types.Note, filterTags []string) []*types.Note {
