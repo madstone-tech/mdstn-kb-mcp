@@ -10,6 +10,7 @@ import (
 
 	"github.com/madstone-tech/mdstn-kb-mcp/internal/search"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/storage"
+	"github.com/madstone-tech/mdstn-kb-mcp/pkg/vector"
 	"github.com/spf13/cobra"
 )
 
@@ -27,16 +28,24 @@ func newSearchCmd() *cobra.Command {
 		buildIndex bool
 		after      string
 		before     string
+		semantic   bool
+		threshold  float64
 	)
 
 	cmd := &cobra.Command{
 		Use:   "search [query]",
-		Short: "Search notes using full-text search",
-		Long: `Search through your notes using full-text search with various filters.
+		Short: "Search notes using full-text or semantic search",
+		Long: `Search through your notes using full-text or semantic (vector-based) search.
 
 Examples:
   # Simple text search
   kbvault search "golang concurrency"
+  
+  # Semantic search (requires Ollama)
+  kbvault search "how to handle errors" --semantic
+  
+  # Semantic search with similarity threshold
+  kbvault search "database patterns" --semantic --threshold 0.8
   
   # Search with tag filter
   kbvault search "patterns" --tag golang --tag advanced
@@ -56,6 +65,11 @@ Examples:
   # Build/rebuild search index
   kbvault search --build-index`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate threshold
+			if threshold < 0 || threshold > 1 {
+				return fmt.Errorf("threshold must be between 0.0 and 1.0, got %.2f", threshold)
+			}
+
 			// Get profile-aware configuration
 			cfg := getConfig()
 			if cfg == nil {
@@ -74,12 +88,41 @@ Examples:
 				}
 			}()
 
+			ctx := context.Background()
+			query := strings.Join(args, " ")
+
+			// Handle semantic search
+			if semantic {
+				// Check if vector search is enabled
+				if !cfg.VectorSearch.Enabled {
+					return fmt.Errorf("semantic search is not enabled in configuration; enable vector_search in config file")
+				}
+
+				// Create semantic engine
+				semanticEngine, err := search.CreateSemanticEngine(&cfg.VectorSearch)
+				if err != nil {
+					return fmt.Errorf("failed to initialize semantic search: %w", err)
+				}
+
+				// Perform semantic search
+				results, err := semanticEngine.Search(ctx, query, limit, threshold)
+				if err != nil {
+					return fmt.Errorf("semantic search failed: %w", err)
+				}
+
+				// Output semantic search results
+				if outputJSON {
+					return outputSemanticSearchJSON(cmd.OutOrStdout(), results)
+				}
+
+				return outputSemanticSearchList(cmd.OutOrStdout(), results)
+			}
+
+			// Standard full-text search
 			// Create search engine
 			searchOpts := search.DefaultOptions()
 			searchOpts.MaxResults = limit
 			engine := search.New(storageBackend, searchOpts)
-
-			ctx := context.Background()
 
 			// Handle index building
 			if buildIndex {
@@ -96,8 +139,8 @@ Examples:
 			}
 
 			// Build search query
-			query := search.SearchQuery{
-				Query:    strings.Join(args, " "),
+			searchQuery := search.SearchQuery{
+				Query:    query,
 				Tags:     tags,
 				Type:     noteType,
 				Fields:   fields,
@@ -127,7 +170,7 @@ Examples:
 					dateRange.Before = t
 				}
 
-				query.DateRange = dateRange
+				searchQuery.DateRange = dateRange
 			}
 
 			// First, build the index (in production, this would be cached)
@@ -136,7 +179,7 @@ Examples:
 			}
 
 			// Perform search
-			results, err := engine.Search(ctx, query)
+			results, err := engine.Search(ctx, searchQuery)
 			if err != nil {
 				return fmt.Errorf("search failed: %w", err)
 			}
@@ -167,6 +210,8 @@ Examples:
 	cmd.Flags().BoolVar(&buildIndex, "build-index", false, "Build or rebuild the search index")
 	cmd.Flags().StringVar(&after, "after", "", "Only show notes created after this date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&before, "before", "", "Only show notes created before this date (YYYY-MM-DD)")
+	cmd.Flags().BoolVar(&semantic, "semantic", false, "Use semantic (vector-based) search instead of full-text search")
+	cmd.Flags().Float64Var(&threshold, "threshold", 0.7, "Similarity threshold for semantic search (0.0-1.0)")
 
 	return cmd
 }
@@ -283,6 +328,57 @@ func outputSearchJSON(w io.Writer, results []search.SearchResult) error {
 	output := struct {
 		Count   int                   `json:"count"`
 		Results []search.SearchResult `json:"results"`
+	}{
+		Count:   len(results),
+		Results: results,
+	}
+
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(output)
+}
+
+func outputSemanticSearchList(w io.Writer, results []vector.SearchResult) error {
+	if len(results) == 0 {
+		if _, err := fmt.Fprintln(w, "No results found"); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+		return nil
+	}
+
+	if _, err := fmt.Fprintf(w, "Found %d semantic search results:\n\n", len(results)); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
+
+	for i, result := range results {
+		if _, err := fmt.Fprintf(w, "%d. %s (ID: %s)\n", i+1, result.Title, result.ID); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+		if _, err := fmt.Fprintf(w, "   Similarity: %.2f\n", result.Score); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+
+		if result.Metadata != nil {
+			// Display metadata if available
+			if tags, ok := result.Metadata["tags"]; ok {
+				if _, err := fmt.Fprintf(w, "   Tags: %v\n", tags); err != nil {
+					return fmt.Errorf("failed to write output: %w", err)
+				}
+			}
+		}
+
+		if _, err := fmt.Fprintln(w); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func outputSemanticSearchJSON(w io.Writer, results []vector.SearchResult) error {
+	output := struct {
+		Count   int                   `json:"count"`
+		Results []vector.SearchResult `json:"results"`
 	}{
 		Count:   len(results),
 		Results: results,
