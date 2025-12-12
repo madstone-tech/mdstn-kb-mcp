@@ -1,0 +1,44 @@
+[
+  {
+    "id": "01HQXYZ001",
+    "title": "Distributed Systems Concepts",
+    "content": "Distributed systems involve multiple autonomous computers that communicate through a network. Key concepts include consensus algorithms, fault tolerance, and eventual consistency.",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "01HQXYZ002",
+    "title": "Microservices Architecture",
+    "content": "Microservices break down applications into loosely coupled, independently deployable services. Each service owns its data and communicates via APIs. Benefits include scalability and independent deployment cycles.",
+    "created_at": "2024-01-02T00:00:00Z",
+    "updated_at": "2024-01-02T00:00:00Z"
+  },
+  {
+    "id": "01HQXYZ003",
+    "title": "Consensus Algorithms in Blockchain",
+    "content": "Consensus mechanisms like Proof of Work and Proof of Stake ensure network agreement on transaction validity. Byzantine Fault Tolerant algorithms are critical for security in distributed ledgers.",
+    "created_at": "2024-01-03T00:00:00Z",
+    "updated_at": "2024-01-03T00:00:00Z"
+  },
+  {
+    "id": "01HQXYZ004",
+    "title": "Fault Tolerance and Resilience",
+    "content": "Building resilient systems requires handling failures gracefully. Circuit breakers, retry logic, and health checks prevent cascading failures. Monitoring and observability are essential for detecting issues early.",
+    "created_at": "2024-01-04T00:00:00Z",
+    "updated_at": "2024-01-04T00:00:00Z"
+  },
+  {
+    "id": "01HQXYZ005",
+    "title": "Network Protocols and APIs",
+    "content": "REST APIs use HTTP methods (GET, POST, PUT, DELETE) for resource manipulation. gRPC provides faster, binary communication. GraphQL allows flexible data querying with a declarative syntax.",
+    "created_at": "2024-01-05T00:00:00Z",
+    "updated_at": "2024-01-05T00:00:00Z"
+  },
+  {
+    "id": "01HQXYZ006",
+    "title": "Data Consistency and Replication",
+    "content": "Eventual consistency trades immediate consistency for availability and partition tolerance (CAP theorem). Master-slave replication, CRDT, and versioning strategies maintain data integrity across replicas.",
+    "created_at": "2024-01-06T00:00:00Z",
+    "updated_at": "2024-01-06T00:00:00Z"
+  }
+]
