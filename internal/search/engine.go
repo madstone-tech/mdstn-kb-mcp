@@ -528,8 +528,12 @@ func (e *Engine) parseNote(path string, data []byte) (*IndexedDocument, error) {
 	content := string(data)
 	lines := strings.Split(content, "\n")
 
+	// Extract ULID from filename (e.g., "notes/01KC83AQAJV2CEB9VTGPHTMBYP.md" → "01KC83AQAJV2CEB9VTGPHTMBYP")
+	filename := filepath.Base(path)
+	ulid := strings.TrimSuffix(filename, ".md")
+
 	// Extract title from first # heading or filename
-	title := strings.TrimSuffix(filepath.Base(path), ".md")
+	title := ulid
 	for _, line := range lines {
 		if strings.HasPrefix(line, "# ") {
 			title = strings.TrimPrefix(line, "# ")
@@ -554,7 +558,7 @@ func (e *Engine) parseNote(path string, data []byte) (*IndexedDocument, error) {
 	}
 
 	doc := &IndexedDocument{
-		ID:        path, // Use path as ID for now
+		ID:        ulid, // Use ULID only, not the full path
 		Title:     title,
 		Content:   content,
 		Tags:      tags,
