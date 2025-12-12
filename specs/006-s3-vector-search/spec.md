@@ -31,7 +31,7 @@ A researcher wants to find all notes about "distributed systems concepts" withou
 **Acceptance Scenarios**:
 
 1. **Given** a vault with notes on "microservices", "distributed consensus", "fault-tolerant systems", **When** user searches semantically for "distributed systems", **Then** all three notes are returned in results with relevance scores
-2. **Given** semantic search is enabled with OpenAI embeddings, **When** user searches for "machine learning approaches", **Then** results include notes on "deep learning", "neural networks", "supervised learning" ranked by semantic similarity
+2. **Given** semantic search is enabled and Ollama embeddings are generated locally, **When** user searches for "machine learning approaches", **Then** results include notes on "deep learning", "neural networks", "supervised learning" ranked by semantic similarity
 3. **Given** a semantic search query returns multiple results, **When** user views results, **Then** each result shows relevance score (0-1) indicating semantic match strength
 
 ---
@@ -68,19 +68,19 @@ A user wants best-of-both-worlds search: keyword accuracy combined with semantic
 
 ---
 
-### User Story 4 - Configurable Embedding Provider (Priority: P2)
+### User Story 4 - Configurable Ollama Models (Priority: P2)
 
-A privacy-conscious team wants to use local embeddings instead of cloud providers. A team on a budget wants cheaper embeddings. Users should be able to configure which embedding provider their vault uses (OpenAI, HuggingFace, local models) and switch between them.
+A user wants to optimize embeddings for their specific needs - some prefer fast/small models for speed, others prefer higher quality embeddings. Users should be able to configure which Ollama model their vault uses and easily switch between available local models.
 
-**Why this priority**: Supports different organizational requirements - privacy, cost, compliance. Enables flexibility in choosing trade-offs.
+**Why this priority**: Enables users to trade off between speed and quality based on their local hardware and use case. Supports both local and remote Ollama instances for flexibility.
 
-**Independent Test**: Can be fully tested by: configuring vault with different embedding providers, verifying semantic search works with each provider, and confirming embeddings can be regenerated when provider changes.
+**Independent Test**: Can be fully tested by: configuring vault with different Ollama models, verifying semantic search works with each model, and confirming embeddings can be regenerated when model changes.
 
 **Acceptance Scenarios**:
 
-1. **Given** vault configured with OpenAI embeddings, **When** user switches to HuggingFace provider via `kbvault config set vector.provider "huggingface"`, **Then** system can regenerate embeddings with new provider
-2. **Given** local model as embedding provider, **When** semantic search executes, **Then** embeddings are generated locally without external API calls
-3. **Given** multiple embedding providers available, **When** user specifies provider in config, **Then** subsequent embedding generation uses specified provider
+1. **Given** vault configured with `nomic-embed-text` model, **When** user switches to another fast/small model via `kbvault config set vector.model "mxbai-embed-large"`, **Then** system can regenerate embeddings with new model
+2. **Given** local Ollama instance running, **When** semantic search executes, **Then** embeddings are generated locally without external API calls
+3. **Given** user wants to use remote Ollama instance, **When** user configures `kbvault config set vector.ollama_endpoint "http://remote-host:11434"`, **Then** subsequent embedding generation uses remote instance
 
 ---
 
@@ -132,7 +132,7 @@ For vaults with hundreds or thousands of notes, users want embeddings to be gene
 ### Functional Requirements
 
 - **FR-001**: System MUST support semantic search that returns notes based on conceptual similarity, not just keyword matching
-- **FR-002**: System MUST support multiple embedding providers (OpenAI, HuggingFace, local models) with configuration per profile
+- **FR-002**: System MUST support Ollama as the embedding provider with configurable model selection and support for both local and remote Ollama instances (default: local `http://localhost:11434`)
 - **FR-003**: System MUST implement hybrid search combining TF-IDF text search results with vector similarity results, with configurable weighting
 - **FR-004**: Users MUST be able to find similar notes using `kbvault search --similar-to <note-id>` command
 - **FR-005**: System MUST support configurable similarity threshold for semantic search results (default 0.7)
@@ -140,7 +140,7 @@ For vaults with hundreds or thousands of notes, users want embeddings to be gene
 - **FR-007**: Users MUST be able to configure embedding generation behavior (auto, manual, scheduled) per profile
 - **FR-008**: System MUST provide relevance scoring for search results (0-1 scale) with explanation of score composition
 - **FR-009**: System MUST support batch embedding generation for efficient processing of large vaults
-- **FR-010**: System MUST handle embedding provider changes by supporting regeneration of all embeddings with new provider
+- **FR-010**: System MUST handle Ollama model changes by supporting regeneration of all embeddings with new model
 - **FR-011**: System MUST support incremental embedding updates when notes are added or modified
 - **FR-012**: Users MUST be able to specify search result ranking strategy (text-only, vector-only, or hybrid with configurable weights)
 - **FR-013**: System MUST maintain backward compatibility with text-only search (semantic search is optional)
@@ -149,21 +149,21 @@ For vaults with hundreds or thousands of notes, users want embeddings to be gene
 
 ### Key Entities
 
-- **Vector Embedding**: Numerical representation (vector) of note content generated by embedding model, stored alongside note metadata
-  - Attributes: dimensions (1536 for OpenAI), provider (openai/huggingface/local), confidence score
-  - Relationships: associated with single Note, updated when Note changes
+- **Vector Embedding**: Numerical representation (vector) of note content generated by Ollama embedding model, stored alongside note metadata
+  - Attributes: dimensions (varies by model: 384 for nomic-embed-text), ollama_model, confidence_score, generated_at
+  - Relationships: associated with single Note, updated when Note changes or model changes
 
 - **Search Result**: Unified search result combining text match data with semantic match data
   - Attributes: note_id, relevance_score (0-1), text_match_score, semantic_match_score, explanation, ranking_position
   - Relationships: returned from Search Query, multiple per query
 
 - **Search Configuration**: Per-profile settings controlling how semantic search behaves
-  - Attributes: semantic_enabled (bool), text_weight (0-1), vector_weight (0-1), similarity_threshold (0-1), embedding_provider, auto_regenerate
+  - Attributes: semantic_enabled (bool), text_weight (0-1), vector_weight (0-1), similarity_threshold (0-1), ollama_model (default: nomic-embed-text), ollama_endpoint (default: http://localhost:11434), auto_regenerate
   - Relationships: belongs to Profile
 
-- **Embedding Provider**: Service that generates embeddings
-  - Attributes: name (openai/huggingface/local), model_name, dimensions, cost_tier, api_endpoint
-  - Relationships: configured in Search Configuration, used by Embedding Generation
+- **Ollama Model**: Embedding model available in Ollama runtime
+  - Attributes: model_name (nomic-embed-text, mxbai-embed-large, etc.), dimensions, inference_speed (relative), quality_tier, local_only (bool)
+  - Relationships: configured in Search Configuration, used for Embedding Generation
 
 ## Success Criteria *(mandatory)*
 
@@ -174,13 +174,13 @@ For vaults with hundreds or thousands of notes, users want embeddings to be gene
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can perform semantic searches and receive results in under 2 seconds for vaults with 1000+ notes
+- **SC-001**: Users can perform semantic searches and receive results in under 2 seconds for vaults with 1000+ notes (on standard laptop hardware)
 - **SC-002**: Semantic search returns relevant results (conceptually related notes) with minimum 80% accuracy as verified by user testing
 - **SC-003**: Hybrid search with text and semantic components increases search result relevance by minimum 40% compared to text-only search (measured through user satisfaction surveys)
-- **SC-004**: System can generate embeddings for 1000-note vault within 5 minutes using batch processing (including API calls)
-- **SC-005**: Users can switch embedding providers and regenerate vault embeddings without data loss
-- **SC-006**: System maintains >90% embedding cache hit rate during repeated searches to minimize API calls
-- **SC-007**: Similarity search returns top 5 related notes in under 1 second
+- **SC-004**: System can generate embeddings for 1000-note vault efficiently using batch processing (local Ollama, optimized for standard hardware, expected ~10-15 minutes for nomic-embed-text)
+- **SC-005**: Users can switch Ollama models and regenerate vault embeddings without data loss
+- **SC-006**: System maintains >90% embedding cache hit rate during repeated searches to minimize Ollama inference calls
+- **SC-007**: Similarity search returns top 5 related notes in under 1 second (on standard laptop hardware)
 - **SC-008**: At least 85% of users can successfully perform semantic search without additional training or documentation
 - **SC-009**: Search result explanations help users understand relevance (measured by user feedback: >80% report explanations are "clear" or "very clear")
 - **SC-010**: Semantic search works correctly with text_weight/vector_weight configurations from 0/100 to 100/0 (inclusive)
@@ -192,12 +192,14 @@ For vaults with hundreds or thousands of notes, users want embeddings to be gene
 ## Assumptions
 
 - S3 Vector Search backend infrastructure is available (depends on Session 5 completion)
-- Multiple embedding APIs are accessible (OpenAI, HuggingFace) or local model infrastructure available
+- Ollama is installed and running locally by default on `http://localhost:11434` (configurable for remote instances)
+- Default Ollama model is `nomic-embed-text` (384 dimensions, fast, free, small footprint suitable for standard hardware)
 - Note content is primarily text-based (images, media handled as metadata)
-- Search performance targets are for vaults up to 10,000 notes (larger vaults may require additional optimization)
-- Embeddings are regenerated when configuration changes (not updated incrementally)
-- Default embedding model is OpenAI text-embedding-3-small (1536 dimensions, cost-effective)
-- Users have appropriate API keys/credentials for configured embedding providers
+- Search performance targets are optimized for standard laptop hardware (e.g., 8GB RAM, modern CPU), not high-end servers
+- Embeddings are regenerated when model/configuration changes (not updated incrementally)
+- Users will have Ollama installed as a prerequisite; installation instructions provided in setup docs
+- Supported fast/small/free Ollama models include: nomic-embed-text, mxbai-embed-large, and similar lightweight models
+- Remote Ollama instance support is available but local instance is the primary/recommended use case
 
 ---
 
@@ -212,9 +214,11 @@ For vaults with hundreds or thousands of notes, users want embeddings to be gene
 
 ## Out of Scope (Session 6 doesn't include)
 
+- Support for cloud embedding providers (OpenAI, HuggingFace, etc.) - planned for future session
 - Advanced ML model fine-tuning on vault-specific data
 - Multi-language embedding support beyond what base models provide
 - Custom vector search algorithms (uses S3 Vector Search as-is)
 - Distributed/parallel processing across multiple machines
 - Explicit feedback loops for embedding model improvement
 - Integration with large language models (LLMs) for query augmentation - this is Session 8 (MCP)
+- GPU-specific optimizations or high-performance computing scenarios
