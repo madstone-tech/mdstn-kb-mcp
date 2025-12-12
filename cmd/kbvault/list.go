@@ -253,7 +253,7 @@ func parseFrontmatterFields(frontmatter string, note *types.Note) {
 	// Track if we're in a tags array
 	inTagsArray := false
 
-	for i, line := range lines {
+	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
 		if trimmedLine == "" || strings.HasPrefix(trimmedLine, "#") {
 			continue
@@ -294,9 +294,6 @@ func parseFrontmatterFields(frontmatter string, note *types.Note) {
 			} else if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
 				// End of tags array (next non-indented line)
 				inTagsArray = false
-				// Re-process this line as a normal field
-				i := i
-				_ = i // avoid unused variable
 				// Continue to normal processing below
 			} else {
 				// Might be a continuation, check if it's still a list item
