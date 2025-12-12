@@ -174,7 +174,7 @@ func TestCLIIntegration(t *testing.T) {
 			t.Fatalf("Failed to change to test directory: %v", err)
 		}
 
-		// Test note creation (placeholder)
+		// Test note creation
 		cmd = exec.Command(binaryPath, "new", "--title", "Test Note", "--tags", "test,integration")
 		output, err := cmd.Output()
 		if err != nil {
@@ -186,7 +186,7 @@ func TestCLIIntegration(t *testing.T) {
 			t.Errorf("New note output doesn't contain success message: %s", outputStr)
 		}
 
-		// Test list command (placeholder)
+		// Test list command - should show the created note
 		cmd = exec.Command(binaryPath, "list")
 		output, err = cmd.Output()
 		if err != nil {
@@ -194,8 +194,13 @@ func TestCLIIntegration(t *testing.T) {
 		}
 
 		outputStr = string(output)
-		if !strings.Contains(outputStr, "not yet implemented") {
-			t.Errorf("List output doesn't contain expected placeholder: %s", outputStr)
+		// Should either show the note or a success message, not the placeholder
+		if strings.Contains(outputStr, "not yet implemented") {
+			t.Errorf("List output still contains placeholder: %s", outputStr)
+		}
+		// Check that list command output is reasonable (contains note or found message)
+		if !strings.Contains(outputStr, "Test Note") && !strings.Contains(outputStr, "Found") && !strings.Contains(outputStr, "notes found") {
+			t.Errorf("List output doesn't show expected content: %s", outputStr)
 		}
 	})
 }
