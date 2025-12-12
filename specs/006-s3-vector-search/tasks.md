@@ -91,11 +91,11 @@ Each user story has independent test scenarios (no cross-story dependencies):
 
 ### Tasks
 
-- [ ] T001 Create vector package structure: `pkg/vector/`, `pkg/vector/ollama/`, `pkg/vector/cache/` directories and `_test.go` files
-- [ ] T002 Add AWS S3 Vectors SDK dependency: Update `go.mod` to include `github.com/aws/aws-sdk-go-v2/service/s3vectors@latest`
-- [ ] T003 Create test fixtures directory: `specs/006-s3-vector-search/test-data/` with sample notes JSON and expected embeddings
-- [ ] T004 Extend config schema: Add `[vector]` section to `pkg/config/config.go` with TOML struct tags for 11 vector fields
-- [ ] T005 Create test utilities: `pkg/vector/testutil/fixtures.go` with mock Ollama responses and test vectors (384 dims)
+- [x] T001 Create vector package structure: `pkg/vector/`, `pkg/vector/ollama/`, `pkg/vector/cache/` directories and `_test.go` files
+- [x] T002 Add AWS S3 Vectors SDK dependency: Update `go.mod` to include `github.com/aws/aws-sdk-go-v2/service/s3vectors@latest`
+- [x] T003 Create test fixtures directory: `specs/006-s3-vector-search/test-data/` with sample notes JSON and expected embeddings
+- [x] T004 Extend config schema: Add `[vector]` section to `pkg/config/config.go` with TOML struct tags for 11 vector fields
+- [x] T005 Create test utilities: `pkg/vector/testutil/fixtures.go` with mock Ollama responses and test vectors (384 dims)
 
 ---
 
@@ -109,16 +109,16 @@ Each user story has independent test scenarios (no cross-story dependencies):
 
 ### Tasks
 
-- [ ] T006 Implement Ollama HTTP client interface: `pkg/vector/ollama/client.go` with `Embed(ctx, texts) ([][]float32, error)` method and connection pooling
-- [ ] T007 Implement vector types and validation: `pkg/types/vector.go` with `VectorEmbedding`, `SearchResult`, `SearchQuery` structs and validation methods
-- [ ] T008 Implement cosine similarity function: `pkg/vector/similarity.go` with `CosineSimilarity(a, b []float32) float32` and performance optimizations
-- [ ] T009 Implement in-memory LRU cache: `pkg/vector/cache/cache.go` with thread-safe Get/Set, eviction, TTL support (<50 LOC)
+- [x] T006 Implement Ollama HTTP client interface: `pkg/vector/ollama/client.go` with `Embed(ctx, texts) ([][]float32, error)` method and connection pooling
+- [x] T007 Implement vector types and validation: `pkg/types/vector.go` with `VectorEmbedding`, `SearchResult`, `SearchQuery` structs and validation methods
+- [x] T008 Implement cosine similarity function: `pkg/vector/similarity.go` with `CosineSimilarity(a, b []float32) float32` and performance optimizations
+- [x] T009 Implement in-memory LRU cache: `pkg/vector/cache/cache.go` with thread-safe Get/Set, eviction, TTL support (<50 LOC)
 
 ### Unit Tests (Required)
 
-- [ ] T009a Unit tests for cache: `pkg/vector/cache/cache_test.go` - hit/miss/eviction scenarios, >80% coverage
-- [ ] T008a Unit tests for similarity: `pkg/vector/similarity_test.go` - various vector pairs, edge cases (zeros, negatives, norms), >80% coverage
-- [ ] T006a Integration tests for Ollama client: `pkg/vector/ollama/client_test.go` - mock Ollama server, happy path + error handling, >70% coverage
+- [x] T009a Unit tests for cache: `pkg/vector/cache/cache_test.go` - hit/miss/eviction scenarios, >80% coverage
+- [x] T008a Unit tests for similarity: `pkg/vector/similarity_test.go` - various vector pairs, edge cases (zeros, negatives, norms), >80% coverage
+- [x] T006a Integration tests for Ollama client: `pkg/vector/ollama/client_test.go` - mock Ollama server, happy path + error handling, >70% coverage
 
 ---
 
