@@ -8,22 +8,27 @@ import (
 
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/vector"
 	"github.com/madstone-tech/mdstn-kb-mcp/pkg/vector/cache"
-	"github.com/madstone-tech/mdstn-kb-mcp/pkg/vector/ollama"
 )
+
+// OllamaEmbedder defines the interface for embedding generation
+type OllamaEmbedder interface {
+	Embed(ctx context.Context, text string) ([]float64, error)
+	EmbedBatch(ctx context.Context, texts []string) ([][]float64, error)
+}
 
 // SemanticEngine performs semantic search using embeddings
 type SemanticEngine struct {
-	ollamaClient *ollama.Client
-	backend      vector.Backend
-	cache        *cache.Cache
+	embedder OllamaEmbedder
+	backend  vector.Backend
+	cache    *cache.Cache
 }
 
 // NewSemanticEngine creates a new semantic search engine
-func NewSemanticEngine(ollamaClient *ollama.Client, backend vector.Backend, cache *cache.Cache) *SemanticEngine {
+func NewSemanticEngine(embedder OllamaEmbedder, backend vector.Backend, c *cache.Cache) *SemanticEngine {
 	return &SemanticEngine{
-		ollamaClient: ollamaClient,
-		backend:      backend,
-		cache:        cache,
+		embedder: embedder,
+		backend:  backend,
+		cache:    c,
 	}
 }
 
@@ -41,9 +46,9 @@ func (se *SemanticEngine) Search(ctx context.Context, query string, limit int, t
 	if cached, ok := se.cache.Get(query); ok {
 		embedding = cached
 	} else {
-		// Generate embedding using Ollama
+		// Generate embedding using embedder
 		var err error
-		embedding, err = se.ollamaClient.Embed(ctx, query)
+		embedding, err = se.embedder.Embed(ctx, query)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate embedding for query: %w", err)
 		}
@@ -76,7 +81,7 @@ type IndexNoteRequest struct {
 
 // IndexNote indexes a note's content for semantic search
 func (se *SemanticEngine) IndexNote(ctx context.Context, id string, content string, metadata map[string]interface{}) error {
-	embedding, err := se.ollamaClient.Embed(ctx, content)
+	embedding, err := se.embedder.Embed(ctx, content)
 	if err != nil {
 		return fmt.Errorf("failed to generate embedding for note %s: %w", id, err)
 	}
@@ -100,7 +105,7 @@ func (se *SemanticEngine) IndexNotes(ctx context.Context, notes []IndexNoteReque
 		texts[i] = note.Content
 	}
 
-	embeddings, err := se.ollamaClient.EmbedBatch(ctx, texts)
+	embeddings, err := se.embedder.EmbedBatch(ctx, texts)
 	if err != nil {
 		return fmt.Errorf("failed to generate embeddings for batch: %w", err)
 	}
