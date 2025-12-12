@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -185,9 +186,14 @@ func TestClientNoEmptyResponse(t *testing.T) {
 }
 
 func TestClientConcurrentRequests(t *testing.T) {
-	counter := 0
+	var (
+		mu      sync.Mutex
+		counter int
+	)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		counter++
+		mu.Unlock()
 
 		resp := BatchEmbeddingResponse{
 			Embeddings: [][]float64{{0.1, 0.2, 0.3}},
@@ -214,6 +220,8 @@ func TestClientConcurrentRequests(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
+	mu.Lock()
+	defer mu.Unlock()
 	assert.Equal(t, 5, counter)
 }
 
