@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -75,13 +76,46 @@ By default, shows both metadata and content.`,
 	return cmd
 }
 
-func findAndLoadNote(storage types.StorageBackend, noteID string) (*types.Note, error) {
-	// For now, this is simplified - return a placeholder
-	fmt.Printf("Show note not yet implemented - would show note ID: %s\n", noteID)
-	return &types.Note{
-		ID:    noteID,
-		Title: "Placeholder Note",
-	}, nil
+func findAndLoadNote(storageBackend types.StorageBackend, noteID string) (*types.Note, error) {
+	// Try common file extensions and patterns
+	possiblePaths := []string{
+		noteID + ".md",
+		noteID,
+		"notes/" + noteID + ".md",
+		"daily/" + noteID + ".md",
+	}
+
+	for _, path := range possiblePaths {
+		// Try to read the note
+		data, err := storageBackend.Read(context.TODO(), path)
+		if err == nil {
+			// Parse the note
+			return parseNoteFromData(noteID, path, data), nil
+		}
+	}
+
+	return nil, fmt.Errorf("note not found: %s", noteID)
+}
+
+func parseNoteFromData(noteID string, path string, data []byte) *types.Note {
+	content := string(data)
+	note := &types.Note{
+		ID:       noteID,
+		FilePath: path,
+		Content:  content,
+	}
+
+	// Parse frontmatter and content
+	title, noteContent := parseFrontmatterAndContent(content)
+	note.Title = title
+	note.Content = noteContent
+
+	// Fallback to ID if title is empty
+	if note.Title == "" {
+		note.Title = note.ID
+	}
+
+	return note
 }
 
 func displayNoteDefault(note *types.Note, showMetadata, showContent bool) error {

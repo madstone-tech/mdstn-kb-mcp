@@ -90,21 +90,7 @@ Examples:
 func initializeConfig() error {
 	var err error
 
-	// First, check for local vault configuration (backward compatibility)
-	if localConfig := tryLoadLocalConfig(); localConfig != nil {
-		currentConfig = localConfig
-		currentProfile = "local"
-		// Still initialize profileManager for consistency (even for local vaults)
-		// This prevents nil pointer errors in commands like config set
-		profileManager, err = config.NewProfileManager()
-		if err != nil {
-			// Non-fatal error for local vault mode
-			profileManager = nil
-		}
-		return nil
-	}
-
-	// Initialize profile manager
+	// Initialize profile manager (needed for all paths)
 	profileManager, err = config.NewProfileManager()
 	if err != nil {
 		return fmt.Errorf("failed to initialize profile manager: %w", err)
@@ -112,10 +98,20 @@ func initializeConfig() error {
 
 	// Determine which profile to use
 	profile := globalFlags.Profile
+
+	// If no profile specified with --profile flag, check for local vault (backward compatibility)
+	// But only if an explicit profile hasn't been requested
 	if profile == "" {
-		// Use active profile if no profile specified
+		if localConfig := tryLoadLocalConfig(); localConfig != nil {
+			currentConfig = localConfig
+			currentProfile = "local"
+			return nil
+		}
+
+		// No local vault found, use active global profile
 		profile = profileManager.GetActiveProfile()
 	} else {
+		// Explicit profile was specified with --profile flag
 		// Validate that the specified profile exists
 		profiles, err := profileManager.ListProfiles()
 		if err != nil {
@@ -161,6 +157,12 @@ func tryLoadLocalConfig() *types.Config {
 	cfg, err := manager.LoadFromFile(configPath)
 	if err != nil {
 		return nil
+	}
+
+	// Resolve relative paths in storage config to be relative to vault root
+	// This ensures kbvault works correctly from any working directory
+	if cfg.Storage.Local.Path != "" && !filepath.IsAbs(cfg.Storage.Local.Path) {
+		cfg.Storage.Local.Path = filepath.Join(vaultRoot, cfg.Storage.Local.Path)
 	}
 
 	return cfg

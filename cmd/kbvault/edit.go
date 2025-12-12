@@ -190,10 +190,8 @@ func readNote(storage types.StorageBackend, path string) (*types.Note, error) {
 		return nil, err
 	}
 
-	// Simple note parsing (in production, you'd use proper frontmatter parsing)
 	content := string(data)
 	note := &types.Note{
-		Content:  content,
 		FilePath: path,
 	}
 
@@ -205,20 +203,79 @@ func readNote(storage types.StorageBackend, path string) (*types.Note, error) {
 		note.ID = base
 	}
 
-	// Extract title from first # heading
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "# ") {
-			note.Title = strings.TrimPrefix(line, "# ")
-			break
-		}
-	}
+	// Parse frontmatter and content
+	title, noteContent := parseFrontmatterAndContent(content)
+	note.Title = title
+	note.Content = noteContent
 
+	// Fallback to ID if title is empty
 	if note.Title == "" {
 		note.Title = note.ID
 	}
 
 	return note, nil
+}
+
+// parseFrontmatterAndContent extracts title from YAML frontmatter and returns content
+func parseFrontmatterAndContent(content string) (string, string) {
+	// Check if content starts with YAML frontmatter marker
+	if !strings.HasPrefix(content, "---") {
+		// No frontmatter, extract title from first heading
+		return extractTitleFromMarkdown(content), content
+	}
+
+	// Split by frontmatter markers
+	parts := strings.SplitN(content, "---", 3)
+	if len(parts) < 3 {
+		// Invalid frontmatter, treat as plain content
+		return extractTitleFromMarkdown(content), content
+	}
+
+	// parts[0] is empty (before first ---)
+	// parts[1] is the frontmatter
+	// parts[2] is the content
+	frontmatter := parts[1]
+	bodyContent := strings.TrimSpace(parts[2])
+
+	// Extract title from frontmatter
+	title := extractTitleFromFrontmatter(frontmatter)
+
+	// If no title in frontmatter, try markdown heading
+	if title == "" {
+		title = extractTitleFromMarkdown(bodyContent)
+	}
+
+	return title, bodyContent
+}
+
+// extractTitleFromFrontmatter extracts title from YAML frontmatter
+func extractTitleFromFrontmatter(frontmatter string) string {
+	lines := strings.Split(frontmatter, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "title:") {
+			// Extract value after "title:"
+			title := strings.TrimSpace(strings.TrimPrefix(line, "title:"))
+			// Remove quotes if present
+			title = strings.Trim(title, "\"'")
+			if title != "" {
+				return title
+			}
+		}
+	}
+	return ""
+}
+
+// extractTitleFromMarkdown extracts title from first markdown heading
+func extractTitleFromMarkdown(content string) string {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "# ") {
+			return strings.TrimPrefix(line, "# ")
+		}
+	}
+	return ""
 }
 
 // editNote opens a note in the configured editor
