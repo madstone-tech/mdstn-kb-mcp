@@ -104,12 +104,6 @@ changelog:
     - title: "Other"
       order: 999
 
-# Software Bill of Materials (SBOM)
-sboms:
-  - artifacts: archive
-  - id: source
-    artifacts: source
-
 release:
   github:
     owner: madstone-tech
