@@ -38,7 +38,7 @@ func TestClientEmbed(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -67,7 +67,7 @@ func TestClientEmbedBatch(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -94,7 +94,7 @@ func TestClientEmbedEmpty(t *testing.T) {
 func TestClientEmbedError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("server error"))
+		_, _ = w.Write([]byte("server error"))
 	}))
 	defer server.Close()
 
@@ -139,7 +139,7 @@ func TestClientClose(t *testing.T) {
 func TestClientContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(200 * time.Millisecond)
-		w.Write([]byte(`{"embeddings": [[0.1, 0.2]]}`))
+		_, _ = w.Write([]byte(`{"embeddings": [[0.1, 0.2]]}`))
 	}))
 	defer server.Close()
 
@@ -155,7 +155,7 @@ func TestClientContextCancellation(t *testing.T) {
 
 func TestClientMalformedResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -173,7 +173,7 @@ func TestClientNoEmptyResponse(t *testing.T) {
 			Model:      "test-model",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -195,7 +195,7 @@ func TestClientConcurrentRequests(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -225,7 +225,7 @@ func TestClientConnectionPool(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -266,7 +266,7 @@ func BenchmarkClientEmbed(b *testing.B) {
 			Model:      "test-model",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -274,14 +274,14 @@ func BenchmarkClientEmbed(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.Embed(context.Background(), "test text")
+		_, _ = client.Embed(context.Background(), "test text")
 	}
 }
 
 func BenchmarkClientEmbedBatch(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req EmbeddingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		embeddings := make([][]float64, len(req.Input))
 		for i := range embeddings {
@@ -294,7 +294,7 @@ func BenchmarkClientEmbedBatch(b *testing.B) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -303,7 +303,7 @@ func BenchmarkClientEmbedBatch(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.EmbedBatch(context.Background(), texts)
+		_, _ = client.EmbedBatch(context.Background(), texts)
 	}
 }
 
@@ -317,7 +317,7 @@ func TestClientResponseBodyRead(t *testing.T) {
 			Model:      "test",
 		}
 
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -332,7 +332,7 @@ func TestClientReadBodyError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		// Write partial response to trigger read error
-		w.Write([]byte(`{"embeddings": [[0.1, 0.2]`))
+		_, _ = w.Write([]byte(`{"embeddings": [[0.1, 0.2]`))
 		// Note: httptest will close the connection before we can trigger a read error
 	}))
 	defer server.Close()

@@ -222,7 +222,7 @@ func BenchmarkCosineSimilarity(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		CosineSimilarity(a, b_vec)
+		_, _ = CosineSimilarity(a, b_vec)
 	}
 }
 

@@ -240,10 +240,11 @@ func TestSemanticEngineDeleteNotes(t *testing.T) {
 		{ID: "note2", Content: "Content 2"},
 		{ID: "note3", Content: "Content 3"},
 	}
-	engine.IndexNotes(context.Background(), notes)
+	err := engine.IndexNotes(context.Background(), notes)
+	require.NoError(t, err)
 
 	// Delete multiple notes
-	err := engine.DeleteNotes(context.Background(), []string{"note1", "note2"})
+	err = engine.DeleteNotes(context.Background(), []string{"note1", "note2"})
 	require.NoError(t, err)
 
 	// Verify
@@ -325,7 +326,7 @@ func BenchmarkSemanticEngineSearch(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		engine.Search(context.Background(), "test query", 10, 0.7)
+		_, _ = engine.Search(context.Background(), "test query", 10, 0.7)
 	}
 }
 
@@ -344,6 +345,6 @@ func BenchmarkSemanticEngineIndexNotes(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		engine.IndexNotes(context.Background(), notes)
+		_ = engine.IndexNotes(context.Background(), notes)
 	}
 }
