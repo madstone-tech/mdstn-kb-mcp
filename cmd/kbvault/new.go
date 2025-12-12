@@ -78,7 +78,9 @@ The note will be created in the vault's notes directory.`,
 			// Open in editor if requested
 			if open {
 				// Open editor and get modified content
-				editedContent, err := openInEditorAndRead(note.FilePath)
+				// Convert relative path to absolute by joining with storage path
+				absFilePath := filepath.Join(config.Storage.Local.Path, note.FilePath)
+				editedContent, err := openInEditorAndRead(absFilePath)
 				if err != nil {
 					return fmt.Errorf("failed to edit note: %w", err)
 				}
